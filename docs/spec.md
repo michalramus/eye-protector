@@ -96,13 +96,20 @@ counted and shown back — rather than a reflex.
     a half-finished timer does not reappear confusingly.
 37. As a user, I want Force Quit to keep working, so that a bug in this app
     cannot lock me out of my own machine.
-38. As a user, I want a guarantee that the lock lifts within a minute of the
-    Break's due end, so that a wedged app is survivable without Force Quit.
+38. As a user, I want a guarantee that I reach Idle — where Start is clickable
+    — within a minute of the Break's due end, so that a wedged app is
+    survivable without Force Quit. Idle is still locked; what is restored is
+    the ability to act.
 39. As a user who plugs in a monitor mid-Break, I want it covered too, so that
     a new screen is not a gap.
 40. As a user who unplugs one mid-Break, I want the rest to keep working.
 41. As a user changing the Session length mid-Session, I want it to take effect
     now, so that shortening it is not pointless.
+42. As a user, I want the app to take activation straight back if something
+    steals focus during Lockout, so that another app cannot end my Break by
+    appearing in front of it.
+43. As a user, I want log out, restart and shut down to keep working during a
+    Break, so that Lockout never stands between me and my own machine.
 
 ## Implementation Decisions
 
@@ -149,6 +156,17 @@ lives in the adapter, not the engine, and recovers by rebuilding the engine in
 its Idle state rather than asking it to transition — a safety net that calls
 into the thing it protects against is not a safety net.
 
+**Lockout keeps activation** by re-activating on `didResignActive`, without
+consulting `presentationOptions` — that property keeps its assigned value even
+once it has stopped taking effect, so reading it back cannot tell you whether
+Lockout is still real.
+
+**Display sleep is not treated as the user going away.** `screensDidSleep` is
+driven by the system idle timer, so observing it would pause the Session clock
+for a user who simply is not typing. Only machine sleep, screen lock and fast
+user switching pause it, each as a matched away/back pair so that one source's
+"back" cannot cancel another's "away".
+
 **Escape** is detected with a local `NSEvent` monitor, not an event tap:
 Lockout keeps the app frontmost for the whole Break, so the key events arrive
 anyway. The escape count is checked against an `EscapePolicy`, currently
@@ -187,7 +205,9 @@ There is no prior art in this repo — it is the first code in it.
 ## Out of Scope
 
 - Input-idleness detection as a pause or break trigger (story 27 rules it out).
-- A cap on Escapes: the policy hook exists, the cap does not.
+- Enabling a cap on Escapes. `EscapePolicy.maxPerDay` exists and works, but
+  nothing selects it: the policy is always `.unlimited`. It is kept as the
+  agreed hook for adding a cap later without reshaping anything.
 - Configurable Escape hold duration, Overlay appearance, warning lead time, or
   choosing which Displays are covered.
 - Sounds.

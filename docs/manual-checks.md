@@ -22,7 +22,11 @@ With the Overlay up, none of these may reach another application:
 - [ ] Clicking where the Dock would be
 - [ ] A fullscreen app running behind the Overlay stays behind it
 
-Force Quit (Cmd-Opt-Esc) **must** still work. That is deliberate — ADR 0004.
+Force Quit (Cmd-Opt-Esc) **must** still work, and so must log out, restart and
+shut down. All three are deliberate — ADR 0004.
+
+- [ ] Another app stealing focus during a Break does not end Lockout: the
+      Overlay takes activation back
 
 ## The cycle
 
@@ -48,11 +52,16 @@ Force Quit (Cmd-Opt-Esc) **must** still work. That is deliberate — ADR 0004.
       unchanged, not advanced
 - [ ] Close the lid mid-Break, reopen: the Break resumes rather than having
       expired
+- [ ] Leave the machine untouched but awake past the display-sleep timeout:
+      the Session clock must keep running. Display sleep is *not* the user
+      going away
 
 ## Displays
 
 - [ ] Plug in a Display during a Break: it gets covered within a moment
 - [ ] Unplug one during a Break: the rest stay covered, nothing crashes
+- [ ] Swap one Display for a different one without changing the count: the
+      Overlay must re-cover the new arrangement, not sit on stale frames
 
 ## Settings
 
