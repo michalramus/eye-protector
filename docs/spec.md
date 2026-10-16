@@ -110,6 +110,9 @@ counted and shown back — rather than a reflex.
     appearing in front of it.
 43. As a user, I want log out, restart and shut down to keep working during a
     Break, so that Lockout never stands between me and my own machine.
+44. As a user, I want the app to kill itself if it hangs while my screen is
+    locked out, so that a crash in an eye-protector cannot cost me my
+    machine.
 
 ## Implementation Decisions
 
@@ -151,10 +154,19 @@ Accessibility permission.
 which are stored as loose `UserDefaults` keys so `Counters` stays a plain value
 type.
 
-**Force Quit stays enabled, plus a dead-man's switch** (ADR 0004). The switch
-lives in the adapter, not the engine, and recovers by rebuilding the engine in
-its Idle state rather than asking it to transition — a safety net that calls
-into the thing it protects against is not a safety net.
+**Force Quit stays enabled, plus two independent dead-man's switches**
+(ADR 0004). The first lives in the adapter, not the engine, and recovers by
+rebuilding the engine in its Idle state rather than asking it to transition —
+a safety net that calls into the thing it protects against is not a safety
+net. The second runs on its own thread and ends the process outright if the
+main thread stops responding while Lockout is engaged, because every other
+safeguard is main-thread code and so fails together with it. All three limits
+live on one `SafetyNets` value with `.lenient` and `.strict` presets.
+
+The decision of what counts as a stall is a pure `StallPolicy` in the core, so
+it is unit-tested; the acting on it cannot be, since the only available action
+is ending the process. A `EYE_PROTECTOR_WEDGE_AFTER` env var injects a
+deliberate hang so that the kill can at least be observed by hand.
 
 **Lockout keeps activation** by re-activating on `didResignActive`, without
 consulting `presentationOptions` — that property keeps its assigned value even
@@ -214,6 +226,8 @@ There is no prior art in this repo — it is the first code in it.
 - Any persistence of Session progress across launches.
 - A `CGEventTap`, and the Accessibility permission it would require.
 - Notarisation and distribution beyond running locally.
+- Recovering a Session after the watchdog has killed the process: the app
+  restarts Idle like any other launch.
 - Any history or reporting beyond today's two counts.
 
 ## Further Notes

@@ -75,8 +75,24 @@ shut down. All three are deliberate — ADR 0004.
 
 ## Safety nets
 
-Hard to trigger without editing code; worth doing once after changing the
-Break logic.
-
 - [ ] With the dead-man's switch temporarily shortened, a Break that never
       ends still returns to Idle and Start becomes clickable
+
+### The main-thread watchdog
+
+This is the only safeguard that survives the main thread failing, and its only
+action is ending the process, so it cannot be unit-tested. `StallPolicy`
+covers the decision; this covers the act.
+
+```
+EYE_PROTECTOR_WEDGE_AFTER=3 ./EyeProtector.app/Contents/MacOS/EyeProtectorApp
+```
+
+The Overlay appears and Lockout engages, the main thread hangs on purpose
+after 3 s, and about 10 s later the process should die on its own — printing
+to stderr as it goes — and hand the Dock and menu bar back. Expect roughly 13
+seconds of a black, genuinely frozen screen: the Start button will not respond
+during it, which is the whole point.
+
+- [ ] The process exits by itself and the desktop comes back
+- [ ] Without the env var set, normal use never triggers it

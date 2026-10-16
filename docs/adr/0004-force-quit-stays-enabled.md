@@ -6,7 +6,15 @@ deliberately leave them enabled, and additionally guarantee that the user
 reaches Idle — where Start is one click away — no later than one minute after
 a Break was due to end, by a timer independent of the cycle engine.
 
-Note what that last guarantee is not: Idle is itself locked, so the net
+A third net sits underneath both: a watchdog on its own thread that ends the
+process if the main thread stops responding while Lockout is engaged. The other
+safeguards are all main-thread code, so a wedged main thread disables every one
+of them at once — including the dead-man's switch. Presentation options can
+only be changed from the main thread, so there is nothing to do but exit and
+let the window server restore the Dock and menu bar. Losing an in-progress
+Session costs nothing, since none of it is persisted anyway (ADR 0002).
+
+Note what the dead-man's switch is not: Idle is itself locked, so the net
 restores the ability to *act*, not the desktop. Being unable to restart the
 machine was never part of what Lockout was asked to do, which is why session
 termination stays available too.
