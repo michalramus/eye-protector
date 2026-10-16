@@ -12,6 +12,12 @@ final class OverlayModel: ObservableObject {
     @Published var phase: OverlayPhase = .idle
     /// Set while the user is holding the Escape key, 0...1.
     @Published var escapeProgress: Double = 0
+    @Published var showsSettings = false
+
+    /// Settings are reachable from the Overlay because Lockout hides the menu
+    /// bar: without this, a 180-minute Session could not be corrected without
+    /// sitting through it.
+    var settings: SettingsModel?
 
     var onStart: () -> Void = {}
     var onQuit: () -> Void = {}
@@ -50,10 +56,23 @@ struct OverlayView: View {
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
 
-            Button("Quit", action: model.onQuit)
-                .buttonStyle(.plain)
-                .font(.system(size: 13))
-                .foregroundStyle(.tertiary)
+            HStack(spacing: 18) {
+                Button {
+                    model.showsSettings.toggle()
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                Button("Quit", action: model.onQuit)
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 13))
+            .foregroundStyle(.tertiary)
+
+            if model.showsSettings, let settings = model.settings {
+                SettingsView(model: settings)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(.primary)
+            }
         }
     }
 
