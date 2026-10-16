@@ -1,4 +1,7 @@
 .build/
 .swiftpm/
 EyeProtector.app/
+Resources/EyeProtector.icns
+Resources/EyeProtector.iconset/
+dist/
 *.xcuserstate

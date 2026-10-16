@@ -8,6 +8,8 @@
 	<string>Eye Protector</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.michalramus.eyeprotector</string>
+	<key>CFBundleIconFile</key>
+	<string>EyeProtector</string>
 	<key>CFBundleExecutable</key>
 	<string>EyeProtectorApp</string>
 	<key>CFBundlePackageType</key>
