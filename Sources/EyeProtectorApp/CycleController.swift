@@ -15,6 +15,7 @@ final class CycleController {
 
     private var ticker: Timer?
     private var deadMan: Timer?
+    private var observers: [(center: NotificationCenter, token: any NSObjectProtocol)] = []
 
     /// Called after every event so the menu bar can redraw. Set in step 5.
     var onChange: () -> Void = {}
@@ -43,12 +44,18 @@ final class CycleController {
         escape.onComplete = { [weak self] in self?.send(.escapeCompleted) }
     }
 
+    isolated deinit {
+        for observer in observers {
+            observer.center.removeObserver(observer.token)
+        }
+    }
+
     func start(trigger: LaunchTrigger) {
         observeSleepAndWake()
         send(.appLaunched(trigger))
 
-        ticker = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
-            MainActor.assumeIsolated { self.send(.tick) }
+        ticker = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.send(.tick) }
         }
     }
 
@@ -132,8 +139,8 @@ final class CycleController {
         guard deadMan == nil else { return }
 
         let fireIn = max(1, endsAt.addingTimeInterval(60).timeIntervalSinceNow)
-        deadMan = Timer.scheduledTimer(withTimeInterval: fireIn, repeats: false) { _ in
-            MainActor.assumeIsolated { self.forceIdle() }
+        deadMan = Timer.scheduledTimer(withTimeInterval: fireIn, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated { self?.forceIdle() }
         }
     }
 
@@ -164,42 +171,44 @@ final class CycleController {
         onChange()
     }
 
-    /// Every way the user can stop looking at the screen maps onto the same
-    /// pair of events; the engine ignores a repeated sleep.
+    /// The three ways the user genuinely stops looking at the screen, each as
+    /// a matched pair so that a "back" from one source cannot cancel an
+    /// "away" from another.
+    ///
+    /// Display sleep is deliberately absent. `screensDidSleep` is driven by
+    /// the system idle timer, so observing it would pause the Session clock
+    /// for a user who simply is not typing — which is exactly what the design
+    /// rules out: watching a video is still screen time.
+    private static let awayAndBack: [(away: NSNotification.Name, back: NSNotification.Name)] = [
+        (NSWorkspace.willSleepNotification, NSWorkspace.didWakeNotification),
+        (
+            NSWorkspace.sessionDidResignActiveNotification,
+            NSWorkspace.sessionDidBecomeActiveNotification
+        ),
+    ]
+
     private func observeSleepAndWake() {
         let workspace = NSWorkspace.shared.notificationCenter
-        let away: [NSNotification.Name] = [
-            NSWorkspace.willSleepNotification,
-            NSWorkspace.screensDidSleepNotification,
-            NSWorkspace.sessionDidResignActiveNotification,
-        ]
-        let back: [NSNotification.Name] = [
-            NSWorkspace.didWakeNotification,
-            NSWorkspace.screensDidWakeNotification,
-            NSWorkspace.sessionDidBecomeActiveNotification,
-        ]
 
-        for name in away {
-            workspace.addObserver(forName: name, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { self.send(.machineSlept) }
-            }
-        }
-        for name in back {
-            workspace.addObserver(forName: name, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { self.send(.machineWoke) }
-            }
+        for pair in Self.awayAndBack {
+            observe(pair.away, on: workspace, as: .machineSlept)
+            observe(pair.back, on: workspace, as: .machineWoke)
         }
 
+        // Screen lock has no `NSWorkspace` equivalent.
         let distributed = DistributedNotificationCenter.default()
-        distributed.addObserver(
-            forName: .init("com.apple.screenIsLocked"), object: nil, queue: .main
-        ) { _ in
-            MainActor.assumeIsolated { self.send(.machineSlept) }
+        observe(.init("com.apple.screenIsLocked"), on: distributed, as: .machineSlept)
+        observe(.init("com.apple.screenIsUnlocked"), on: distributed, as: .machineWoke)
+    }
+
+    private func observe(
+        _ name: NSNotification.Name,
+        on center: NotificationCenter,
+        as event: CycleEvent
+    ) {
+        let token = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.send(event) }
         }
-        distributed.addObserver(
-            forName: .init("com.apple.screenIsUnlocked"), object: nil, queue: .main
-        ) { _ in
-            MainActor.assumeIsolated { self.send(.machineWoke) }
-        }
+        observers.append((center, token))
     }
 }
