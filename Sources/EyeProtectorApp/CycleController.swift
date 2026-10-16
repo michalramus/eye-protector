@@ -12,6 +12,7 @@ final class CycleController {
     private let store: SettingsStore
     private let hud = WarningHUD()
     private let escape = EscapeMonitor()
+    private let nets: SafetyNets
 
     private var ticker: Timer?
     private var deadMan: Timer?
@@ -24,10 +25,12 @@ final class CycleController {
         overlay: OverlayController,
         lockout: Lockout = Lockout(),
         store: SettingsStore = SettingsStore(),
+        nets: SafetyNets = .lenient,
         now: Date = Date()
     ) {
         self.overlay = overlay
         self.lockout = lockout
+        self.nets = nets
         self.store = store
         self.engine = CycleEngine(
             now: now,
@@ -127,9 +130,10 @@ final class CycleController {
         }
     }
 
-    /// The guarantee from ADR 0004: Lockout lifts — that is, the user reaches
-    /// Idle, where Start is one click away — no later than a minute after a
-    /// Break was due to end, whatever state the engine has got itself into.
+    /// The guarantee from ADR 0004: the user reaches Idle — where Start is one
+    /// click away — no later than `nets.graceAfterBreak` after a Break was due
+    /// to end, whatever state the engine has got itself into. Idle is still
+    /// locked; what the net restores is the ability to act, not the desktop.
     private func updateDeadMansSwitch() {
         guard case .break(let endsAt, _) = engine.state else {
             deadMan?.invalidate()
@@ -138,7 +142,7 @@ final class CycleController {
         }
         guard deadMan == nil else { return }
 
-        let fireIn = max(1, endsAt.addingTimeInterval(60).timeIntervalSinceNow)
+        let fireIn = max(1, endsAt.addingTimeInterval(nets.graceAfterBreak).timeIntervalSinceNow)
         deadMan = Timer.scheduledTimer(withTimeInterval: fireIn, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated { self?.forceIdle() }
         }
@@ -150,7 +154,7 @@ final class CycleController {
 
         // Sleep can push the Break's end out from under an already-scheduled
         // timer; in that case re-arm rather than cutting the Break short.
-        guard Date() >= endsAt.addingTimeInterval(60) else {
+        guard Date() >= endsAt.addingTimeInterval(nets.graceAfterBreak) else {
             updateDeadMansSwitch()
             return
         }
