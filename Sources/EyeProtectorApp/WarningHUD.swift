@@ -36,8 +36,10 @@ final class WarningHUD {
     private var builtFor: [String] = []
     private var isPresented = false
 
+    private var screenObserver: (any NSObjectProtocol)?
+
     init() {
-        NotificationCenter.default.addObserver(
+        screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
             queue: .main
@@ -46,6 +48,12 @@ final class WarningHUD {
                 guard let self, self.isPresented else { return }
                 self.present()
             }
+        }
+    }
+
+    isolated deinit {
+        if let screenObserver {
+            NotificationCenter.default.removeObserver(screenObserver)
         }
     }
 

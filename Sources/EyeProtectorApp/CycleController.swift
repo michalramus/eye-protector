@@ -104,15 +104,22 @@ final class CycleController {
         }
     }
 
+    /// Assigns only on change. This runs four times a second, `@Published`
+    /// republishes on assignment whether or not the value differs, and the
+    /// Overlay is full-screen on every Display — so an unguarded assignment
+    /// re-renders all of it continuously for as long as the user sits Idle.
     private func refreshOverlayPhase() {
         switch engine.state {
         case .idle:
-            overlay.model.phase = .idle
+            setOverlayPhase(.idle)
+
         case .break(let endsAt, let escapable):
-            overlay.model.phase = .break(
-                remaining: endsAt.timeIntervalSinceNow,
-                escapable: escapable
+            // The remaining time genuinely changes every tick; this one is
+            // meant to republish, that is the countdown.
+            setOverlayPhase(
+                .break(remaining: endsAt.timeIntervalSinceNow, escapable: escapable)
             )
+
         case .warning(let endsAt):
             hud.model.remaining = endsAt.timeIntervalSinceNow
 
@@ -121,12 +128,19 @@ final class CycleController {
         }
     }
 
+    private func setOverlayPhase(_ phase: OverlayPhase) {
+        guard overlay.model.phase != phase else { return }
+        overlay.model.phase = phase
+    }
+
     private func updateEscapeArming() {
         if case .break(_, let escapable) = engine.state, escapable {
             escape.arm()
         } else {
             escape.disarm()
-            overlay.model.escapeProgress = 0
+            if overlay.model.escapeProgress != 0 {
+                overlay.model.escapeProgress = 0
+            }
         }
     }
 

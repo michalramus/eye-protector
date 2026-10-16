@@ -13,14 +13,21 @@ final class OverlayController {
     private var windows: [OverlayWindow] = []
     private var builtFor: [String] = []
     private(set) var isPresented = false
+    private var screenObserver: (any NSObjectProtocol)?
 
     init() {
-        NotificationCenter.default.addObserver(
+        screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            MainActor.assumeIsolated { self.screensChanged() }
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.screensChanged() }
+        }
+    }
+
+    isolated deinit {
+        if let screenObserver {
+            NotificationCenter.default.removeObserver(screenObserver)
         }
     }
 
