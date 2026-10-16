@@ -15,24 +15,9 @@ final class OverlayWindow: NSWindow {
         )
         setFrame(screen.frame, display: true)
 
-        // Above everything the window server will let us sit above, fullscreen
-        // apps included.
-        level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
-
-        // `canJoinAllSpaces` is what makes a Space swipe land on the Overlay
-        // rather than escape it; `fullScreenAuxiliary` lets it draw over a
-        // fullscreen app without being given a Space of its own.
-        collectionBehavior = [
-            .canJoinAllSpaces,
-            .stationary,
-            .fullScreenAuxiliary,
-            .ignoresCycle,
-        ]
-
+        joinEveryScreenLayer()
         backgroundColor = .black
         isOpaque = true
         hasShadow = false
-        isReleasedWhenClosed = false
-        animationBehavior = .none
     }
 }

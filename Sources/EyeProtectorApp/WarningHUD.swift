@@ -33,20 +33,38 @@ struct WarningHUDView: View {
 final class WarningHUD {
     let model = WarningHUDModel()
     private var panels: [NSPanel] = []
+    private var builtFor: [String] = []
+    private var isPresented = false
+
+    init() {
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isPresented else { return }
+                self.present()
+            }
+        }
+    }
 
     func present() {
-        if panels.count != NSScreen.screens.count {
+        if builtFor != ScreenArrangement.signature {
             rebuild()
         }
+        isPresented = true
         panels.forEach { $0.orderFrontRegardless() }
     }
 
     func dismiss() {
+        isPresented = false
         panels.forEach { $0.orderOut(nil) }
     }
 
     private func rebuild() {
         panels.forEach { $0.orderOut(nil) }
+        builtFor = ScreenArrangement.signature
         panels = NSScreen.screens.map { screen in
             let panel = NSPanel(
                 contentRect: .zero,
@@ -54,15 +72,11 @@ final class WarningHUD {
                 backing: .buffered,
                 defer: false
             )
-            panel.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
-            panel.collectionBehavior = [
-                .canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle,
-            ]
+            panel.joinEveryScreenLayer()
             panel.isOpaque = false
             panel.backgroundColor = .clear
             panel.hasShadow = true
             panel.ignoresMouseEvents = true
-            panel.isReleasedWhenClosed = false
 
             let host = NSHostingView(rootView: WarningHUDView(model: model))
             host.frame.size = host.fittingSize
