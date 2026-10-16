@@ -73,15 +73,11 @@ final class CycleController {
 
     private func apply(_ effect: CycleEffect) {
         switch effect {
-        case .presentOverlay(let locked):
+        case .presentOverlay:
             // Windows first, Lockout second: the Overlay has to already be on
             // every Space before the user can be prevented from leaving.
             overlay.present()
-            if locked {
-                lockout.engage()
-            } else {
-                lockout.disengage()
-            }
+            lockout.engage()
 
         case .dismissOverlay:
             lockout.disengage()
@@ -102,21 +98,21 @@ final class CycleController {
         switch engine.state {
         case .idle:
             overlay.model.phase = .idle
-        case .breaking(let endsAt, let escapable):
-            overlay.model.phase = .breaking(
+        case .break(let endsAt, let escapable):
+            overlay.model.phase = .break(
                 remaining: endsAt.timeIntervalSinceNow,
                 escapable: escapable
             )
         case .warning(let endsAt):
             hud.model.remaining = endsAt.timeIntervalSinceNow
 
-        case .working:
+        case .session:
             break
         }
     }
 
     private func updateEscapeArming() {
-        if case .breaking(_, let escapable) = engine.state, escapable {
+        if case .break(_, let escapable) = engine.state, escapable {
             escape.arm()
         } else {
             escape.disarm()
@@ -128,7 +124,7 @@ final class CycleController {
     /// Idle, where Start is one click away — no later than a minute after a
     /// Break was due to end, whatever state the engine has got itself into.
     private func updateDeadMansSwitch() {
-        guard case .breaking(let endsAt, _) = engine.state else {
+        guard case .break(let endsAt, _) = engine.state else {
             deadMan?.invalidate()
             deadMan = nil
             return
@@ -143,7 +139,7 @@ final class CycleController {
 
     private func forceIdle() {
         deadMan = nil
-        guard case .breaking(let endsAt, _) = engine.state else { return }
+        guard case .break(let endsAt, _) = engine.state else { return }
 
         // Sleep can push the Break's end out from under an already-scheduled
         // timer; in that case re-arm rather than cutting the Break short.

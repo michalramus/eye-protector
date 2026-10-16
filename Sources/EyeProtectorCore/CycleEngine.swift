@@ -9,9 +9,9 @@ public enum CycleState: Equatable, Sendable {
     /// Overlay up, Lockout engaged, Start live. Reached by launching, by a
     /// Break expiring, and by nothing else.
     case idle
-    case working(endsAt: Date)
+    case session(endsAt: Date)
     case warning(endsAt: Date)
-    case breaking(endsAt: Date, escapable: Bool)
+    case `break`(endsAt: Date, escapable: Bool)
 }
 
 public enum CycleEvent: Equatable, Sendable {
@@ -27,8 +27,9 @@ public enum CycleEvent: Equatable, Sendable {
 public enum CycleEffect: Equatable, Sendable {
     /// Re-emitted on every entry into a state that shows the Overlay, so the
     /// adapter can treat it as "render the Overlay for the current state"
-    /// rather than tracking transitions itself.
-    case presentOverlay(lockout: Bool)
+    /// rather than tracking transitions itself. Every state that shows the
+    /// Overlay also locks, Idle included, so there is nothing to parameterise.
+    case presentOverlay
     case dismissOverlay
     case presentWarning
     case dismissWarning
@@ -88,14 +89,14 @@ public struct CycleEngine: Equatable, Sendable {
             state = .idle
             phaseStartedAt = now
             sleepStartedAt = nil
-            effects.append(.presentOverlay(lockout: true))
+            effects.append(.presentOverlay)
 
         case .startPressed:
             guard case .idle = state else { break }
             effects.append(contentsOf: beginSession(at: now))
 
         case .escapeCompleted:
-            guard case .breaking(_, let escapable) = state, escapable else { break }
+            guard case .break(_, let escapable) = state, escapable else { break }
             counters.escapesToday += 1
             // An Escape trades the rest away rather than postponing it: a fresh
             // Session starts immediately.
@@ -127,19 +128,19 @@ public struct CycleEngine: Equatable, Sendable {
     // MARK: - Transitions
 
     private mutating func beginSession(at now: Date) -> [CycleEffect] {
-        state = .working(endsAt: now.addingTimeInterval(config.sessionLength))
+        state = .session(endsAt: now.addingTimeInterval(config.sessionLength))
         phaseStartedAt = now
         return [.dismissOverlay]
     }
 
     private mutating func beginBreak(at now: Date) -> [CycleEffect] {
         counters.sessionsToday += 1
-        state = .breaking(
+        state = .break(
             endsAt: now.addingTimeInterval(config.breakLength),
             escapable: escapePolicy.allows(escapesToday: counters.escapesToday)
         )
         phaseStartedAt = now
-        return [.presentOverlay(lockout: true)]
+        return [.presentOverlay]
     }
 
     /// Advances as far as the clock allows. Loops because a single tick can
@@ -162,7 +163,7 @@ public struct CycleEngine: Equatable, Sendable {
             case .idle:
                 break
 
-            case .working(let endsAt):
+            case .session(let endsAt):
                 if now >= endsAt {
                     effects.append(contentsOf: beginBreak(at: now))
                 } else if config.warningEnabled,
@@ -177,11 +178,11 @@ public struct CycleEngine: Equatable, Sendable {
                     effects.append(contentsOf: beginBreak(at: now))
                 }
 
-            case .breaking(let endsAt, _):
+            case .break(let endsAt, _):
                 if now >= endsAt {
                     state = .idle
                     phaseStartedAt = now
-                    effects.append(.presentOverlay(lockout: true))
+                    effects.append(.presentOverlay)
                 }
             }
             if state == before { break }
@@ -198,12 +199,12 @@ public struct CycleEngine: Equatable, Sendable {
         switch state {
         case .idle:
             break
-        case .working(let endsAt):
-            state = .working(endsAt: endsAt.addingTimeInterval(interval))
+        case .session(let endsAt):
+            state = .session(endsAt: endsAt.addingTimeInterval(interval))
         case .warning(let endsAt):
             state = .warning(endsAt: endsAt.addingTimeInterval(interval))
-        case .breaking(let endsAt, let escapable):
-            state = .breaking(endsAt: endsAt.addingTimeInterval(interval), escapable: escapable)
+        case .break(let endsAt, let escapable):
+            state = .break(endsAt: endsAt.addingTimeInterval(interval), escapable: escapable)
         }
         phaseStartedAt = phaseStartedAt?.addingTimeInterval(interval)
     }
@@ -218,22 +219,22 @@ public struct CycleEngine: Equatable, Sendable {
         case .idle:
             return []
 
-        case .working:
-            state = .working(endsAt: startedAt.addingTimeInterval(config.sessionLength))
+        case .session:
+            state = .session(endsAt: startedAt.addingTimeInterval(config.sessionLength))
             return []
 
         case .warning:
             let endsAt = startedAt.addingTimeInterval(config.sessionLength)
             let threshold = endsAt.addingTimeInterval(-config.warningLead)
             if !config.warningEnabled || now < threshold {
-                state = .working(endsAt: endsAt)
+                state = .session(endsAt: endsAt)
                 return [.dismissWarning]
             }
             state = .warning(endsAt: endsAt)
             return []
 
-        case .breaking(_, let escapable):
-            state = .breaking(
+        case .break(_, let escapable):
+            state = .break(
                 endsAt: startedAt.addingTimeInterval(config.breakLength),
                 escapable: escapable
             )

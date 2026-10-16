@@ -4,7 +4,7 @@ import SwiftUI
 /// different: during a Break there is nothing to press, which is the point.
 enum OverlayPhase: Equatable {
     case idle
-    case breaking(remaining: TimeInterval, escapable: Bool)
+    case `break`(remaining: TimeInterval, escapable: Bool)
 }
 
 @MainActor
@@ -33,8 +33,8 @@ struct OverlayView: View {
             switch model.phase {
             case .idle:
                 idle
-            case .breaking(let remaining, let escapable):
-                breaking(remaining: remaining, escapable: escapable)
+            case .break(let remaining, let escapable):
+                breakScreen(remaining: remaining, escapable: escapable)
             }
         }
         .foregroundStyle(.white)
@@ -76,7 +76,7 @@ struct OverlayView: View {
         }
     }
 
-    private func breaking(remaining: TimeInterval, escapable: Bool) -> some View {
+    private func breakScreen(remaining: TimeInterval, escapable: Bool) -> some View {
         VStack(spacing: 20) {
             Text(String(format: "%.0f", max(0, remaining).rounded(.up)))
                 .font(.system(size: 96, weight: .thin, design: .rounded))

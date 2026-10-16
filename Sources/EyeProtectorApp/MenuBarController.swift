@@ -32,14 +32,14 @@ final class MenuBarController {
 
     private static func title(for state: CycleState) -> String {
         switch state {
-        case .working(let endsAt), .warning(let endsAt):
+        case .session(let endsAt), .warning(let endsAt):
             let remaining = max(0, endsAt.timeIntervalSinceNow)
             return String(
                 format: " %d:%02d",
                 Int(remaining) / 60,
                 Int(remaining) % 60
             )
-        case .idle, .breaking:
+        case .idle, .break:
             // Hidden behind Lockout anyway, but keep it honest if it shows.
             return ""
         }
