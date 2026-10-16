@@ -9,6 +9,7 @@ final class SettingsStore {
     private enum Key {
         static let sessionLength = "sessionLength"
         static let breakLength = "breakLength"
+        static let warningLead = "warningLead"
         static let warningEnabled = "warningEnabled"
         static let launchAtLogin = "launchAtLogin"
         static let countersDay = "countersDay"
@@ -30,6 +31,8 @@ final class SettingsStore {
                     ?? fallback.sessionLength,
                 breakLength: defaults.object(forKey: Key.breakLength) as? TimeInterval
                     ?? fallback.breakLength,
+                warningLead: defaults.object(forKey: Key.warningLead) as? TimeInterval
+                    ?? fallback.warningLead,
                 warningEnabled: defaults.object(forKey: Key.warningEnabled) as? Bool
                     ?? fallback.warningEnabled,
                 launchAtLogin: defaults.object(forKey: Key.launchAtLogin) as? Bool
@@ -39,6 +42,7 @@ final class SettingsStore {
         set {
             defaults.set(newValue.sessionLength, forKey: Key.sessionLength)
             defaults.set(newValue.breakLength, forKey: Key.breakLength)
+            defaults.set(newValue.warningLead, forKey: Key.warningLead)
             defaults.set(newValue.warningEnabled, forKey: Key.warningEnabled)
             defaults.set(newValue.launchAtLogin, forKey: Key.launchAtLogin)
         }

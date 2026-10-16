@@ -20,10 +20,18 @@ final class SettingsModel: ObservableObject {
     private var isSyncing = false
 
     init(config: Config) {
-        sessionMinutes = Int((config.sessionLength / 60).rounded())
-        breakSeconds = Int(config.breakLength.rounded())
+        sessionMinutes = Self.minutes(config.sessionLength)
+        breakSeconds = Self.seconds(config.breakLength)
         warningEnabled = config.warningEnabled
         launchAtLogin = LoginItem.isEnabled
+    }
+
+    private static func minutes(_ interval: TimeInterval) -> Int {
+        Int((interval / 60).rounded())
+    }
+
+    private static func seconds(_ interval: TimeInterval) -> Int {
+        Int(interval.rounded())
     }
 
     /// Pushed from the controller after every event. Guarded so that writing
@@ -34,10 +42,10 @@ final class SettingsModel: ObservableObject {
         isSyncing = true
         defer { isSyncing = false }
 
-        let minutes = Int((config.sessionLength / 60).rounded())
+        let minutes = Self.minutes(config.sessionLength)
         if sessionMinutes != minutes { sessionMinutes = minutes }
 
-        let seconds = Int(config.breakLength.rounded())
+        let seconds = Self.seconds(config.breakLength)
         if breakSeconds != seconds { breakSeconds = seconds }
 
         if warningEnabled != config.warningEnabled {
@@ -86,8 +94,12 @@ final class SettingsModel: ObservableObject {
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
 
-    private let sessionRange = 1...180
-    private let breakRange = 5...600
+    /// Derived from `Config` rather than restated, so the stepper cannot
+    /// drift away from the bounds the engine actually clamps to.
+    private let sessionRange =
+        Int(Config.sessionBounds.lowerBound / 60)...Int(Config.sessionBounds.upperBound / 60)
+    private let breakRange =
+        Int(Config.breakBounds.lowerBound)...Int(Config.breakBounds.upperBound)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -102,7 +114,10 @@ struct SettingsView: View {
                 in: breakRange
             )
 
-            Toggle("Warn 30s before a break", isOn: $model.warningEnabled)
+            Toggle(
+                "Warn \(Int(Config.defaultWarningLead))s before a break",
+                isOn: $model.warningEnabled
+            )
             Toggle("Launch at login", isOn: $model.launchAtLogin)
 
             if let error = model.loginItemError {
