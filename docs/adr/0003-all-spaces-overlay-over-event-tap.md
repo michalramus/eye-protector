@@ -21,3 +21,12 @@ genuinely irritating in daily use, the escalation path is the event tap, and
 this ADR is the record of what it costs. The same mechanism also covers
 Mission Control and fullscreen apps, so no separate handling is needed for
 those.
+
+## Spike result
+
+Measured on macOS 27.0.1, 2026-10-16. Cmd-Tab, Mission Control, the Dock and
+Cmd-Q are all blocked by `disableProcessSwitching`. The three-finger Space
+swipe is **not**: the Space change happens, and the Overlay is simply already
+there on arrival. So the `canJoinAllSpaces` behaviour is not redundancy — it is
+the mechanism that satisfies the requirement, and removing it would open the
+hole. The only visible artefact is the Space transition animation.
