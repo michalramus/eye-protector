@@ -35,6 +35,7 @@ final class Lockout {
     func engage() {
         guard !isEngaged else { return }
         isEngaged = true
+        MainThreadWatchdog.shared.setArmed(true)
         NSApp.activate(ignoringOtherApps: true)
         NSApp.presentationOptions = options
 
@@ -59,6 +60,7 @@ final class Lockout {
     func disengage() {
         guard isEngaged else { return }
         isEngaged = false
+        MainThreadWatchdog.shared.setArmed(false)
         if let watchdog {
             NotificationCenter.default.removeObserver(watchdog)
         }

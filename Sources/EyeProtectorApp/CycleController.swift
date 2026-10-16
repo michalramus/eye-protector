@@ -54,11 +54,17 @@ final class CycleController {
     }
 
     func start(trigger: LaunchTrigger) {
+        MainThreadWatchdog.shared.start(stallLimit: nets.mainThreadStallLimit)
         observeSleepAndWake()
         send(.appLaunched(trigger))
 
         ticker = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.send(.tick) }
+            MainActor.assumeIsolated {
+                // Proof of life for the watchdog, before anything that could
+                // itself be the thing that wedges.
+                MainThreadWatchdog.shared.beat()
+                self?.send(.tick)
+            }
         }
     }
 

@@ -20,10 +20,19 @@ struct SafetyNets: Sendable, Equatable {
     /// the engine has got itself into.
     var graceAfterBreak: TimeInterval = 60
 
+    /// How long the main thread may be unresponsive during Lockout before the
+    /// process ends itself to release the screen. Generous, because a brief
+    /// stall under load is normal and killing the app over one would be worse
+    /// than the stall.
+    var mainThreadStallLimit: TimeInterval = 10
+
     /// Today's setting: every net in place.
     static let lenient = SafetyNets()
 
     /// The eventual destination, once the app has earned trust in daily use.
+    ///
+    /// `mainThreadStallLimit` survives even here: it is not a concession to
+    /// the user's willpower, it is the floor under our own correctness.
     static let strict = SafetyNets(
         forceQuitEnabled: false,
         sessionTerminationEnabled: false
