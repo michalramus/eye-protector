@@ -122,11 +122,11 @@ touches no AppKit: every instant arrives as a `now` argument. Events in,
 Events    appLaunched(.user|.login) · startPressed · escapeCompleted · tick ·
           machineSlept · machineWoke · settingsChanged(Config)
 
-Effects   presentOverlay(lockout:) · dismissOverlay · presentWarning ·
+Effects   presentOverlay · dismissOverlay · presentWarning ·
           dismissWarning · persistCounters(Counters)
 
-State     idle · working(endsAt:) · warning(endsAt:) ·
-          breaking(endsAt:escapable:)
+State     idle · session(endsAt:) · warning(endsAt:) ·
+          break(endsAt:escapable:)
 ```
 
 Effects are returned as values rather than dispatched through a gateway
