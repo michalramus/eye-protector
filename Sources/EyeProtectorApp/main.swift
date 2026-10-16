@@ -1,10 +1,8 @@
 import AppKit
 
-let spikeSeconds = ProcessInfo.processInfo.environment["EYE_PROTECTOR_SPIKE_SECONDS"]
-    .flatMap(Double.init) ?? 20
-
 let application = NSApplication.shared
-let appDelegate = SpikeDelegate(duration: spikeSeconds)
+let appDelegate = AppDelegate()
 application.delegate = appDelegate
+// No Dock icon: Eye Protector lives in the menu bar and the Overlay.
 application.setActivationPolicy(.accessory)
 application.run()
