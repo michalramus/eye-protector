@@ -4,7 +4,7 @@ Everything the cycle engine does is covered by `swift test`. Everything below
 depends on the window server, the menu bar or a real human holding a key, and
 has no honest unit test — so it is checked by hand.
 
-Run `./build.sh && open EyeProtector.app`. Set Session to 1 min and Break to
+Run `./build.sh && open "Eye Protector.app"`. Set Session to 1 min and Break to
 10 s in settings first, so a full cycle takes about a minute.
 
 ## Lockout
@@ -85,7 +85,7 @@ action is ending the process, so it cannot be unit-tested. `StallPolicy`
 covers the decision; this covers the act.
 
 ```
-EYE_PROTECTOR_WEDGE_AFTER=3 ./EyeProtector.app/Contents/MacOS/EyeProtectorApp
+EYE_PROTECTOR_WEDGE_AFTER=3 "./Eye Protector.app/Contents/MacOS/EyeProtectorApp"
 ```
 
 The Overlay appears and Lockout engages, the main thread hangs on purpose

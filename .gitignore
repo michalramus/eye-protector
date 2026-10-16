@@ -1,6 +1,6 @@
 .build/
 .swiftpm/
-EyeProtector.app/
+Eye Protector.app/
 Resources/EyeProtector.icns
 Resources/EyeProtector.iconset/
 dist/

@@ -5,10 +5,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VERSION="${1:-dev}"
-APP="EyeProtector.app"
+APP="Eye Protector.app"
 
 if [[ ! -d "$APP" ]]; then
-  echo "no $APP — run ./build.sh release first" >&2
+  echo "no \"$APP\" — run ./build.sh release first" >&2
   exit 1
 fi
 

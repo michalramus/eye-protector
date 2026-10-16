@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 CONFIG="${1:-debug}"
-APP="EyeProtector.app"
+APP="Eye Protector.app"
 BINARY="EyeProtectorApp"
 
 # The icon is generated, not committed, so the drawing script stays the only

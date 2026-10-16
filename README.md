@@ -31,7 +31,7 @@ notarised, so Gatekeeper will refuse it on first launch: right-click the app
 and choose Open, or run
 
 ```
-xattr -dr com.apple.quarantine /Applications/EyeProtector.app
+xattr -dr com.apple.quarantine "/Applications/Eye Protector.app"
 ```
 
 Apple Silicon only.
@@ -39,7 +39,7 @@ Apple Silicon only.
 ## Build from source
 
 ```
-./build.sh release          # assembles EyeProtector.app
+./build.sh release          # assembles "Eye Protector.app"
 ./Scripts/make-dmg.sh 1.0   # packages it into dist/
 swift test                  # runs the cycle engine tests
 ```
