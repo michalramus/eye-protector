@@ -38,13 +38,28 @@ shut down. All three are deliberate — ADR 0004.
 - [ ] The Break ends into Idle with the Overlay still up and Start live
 - [ ] Today's counts in settings go up as expected
 
-## Escape
+## Skipping a Break
 
-- [ ] Holding Esc during a Break fills the progress bar
-- [ ] Releasing early resets it to empty
-- [ ] A completed hold starts a new Session immediately
+- [ ] "Skip this break" shows a hundred-character challenge
+- [ ] Typing a wrong character does nothing at all — it does not appear
+- [ ] Correct characters dim in the displayed string as you go
+- [ ] Cmd-V does not fill the field, with the string on the clipboard
+- [ ] Dragging selected text onto the field does nothing
+- [ ] The displayed string cannot be selected with the mouse
+- [ ] Cmd-A in the field does nothing
+- [ ] Completing it starts a new Session immediately
 - [ ] The skipped count goes up by one
-- [ ] Esc does nothing while Idle
+- [ ] Cancel returns to the Break with the timer still running
+- [ ] If the Break ends while you are typing, the challenge disappears rather
+      than letting you finish for nothing
+
+## Quitting
+
+- [ ] Quit on the Overlay shows the same challenge
+- [ ] Quit in the menu bar popover shows it too
+- [ ] Clicking outside the popover mid-challenge does not close it
+- [ ] Completing it quits the app
+- [ ] Force Quit still bypasses the whole thing, as designed
 
 ## Sleep and lock
 

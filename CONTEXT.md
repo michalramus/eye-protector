@@ -54,6 +54,14 @@ key. An Escape ends the Break and begins a new Session immediately, so it trades
 the rest away rather than postponing it. Escapes are counted and shown back to
 the user, but never refused.
 
+## Challenge
+
+A randomly generated hundred-character string, shown on screen, that must be
+retyped exactly before an Escape or a quit will proceed. Its purpose is cost
+rather than secrecy: it is not a password and is never hidden. A wrong
+keystroke is refused as it is typed rather than at the end, so the string
+never has to be restarted. The automatic safety nets bypass it entirely.
+
 ## Warning
 
 A brief notice shown on every Display shortly before a Session ends, so the

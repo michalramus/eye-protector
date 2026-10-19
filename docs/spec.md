@@ -52,12 +52,16 @@ counted and shown back — rather than a reflex.
     Not Disturb, so that it cannot be silently suppressed.
 16. As a user, I want to turn the warning off, so that I can have the Break
     arrive unannounced if I prefer.
-17. As a user in the middle of something urgent, I want to abandon a Break by
-    holding a key, so that my own tool cannot hijack a live demo.
-18. As a user, I want skipping to take a deliberate three-second hold, so that
-    it cannot happen by reflex.
-19. As a user, I want visible progress while I hold the key, so that I know how
-    long is left.
+17. As a user in the middle of something urgent, I want to be able to abandon
+    a Break, so that my own tool cannot hijack a live demo.
+18. As a user, I want skipping to cost retyping a random hundred-character
+    string, so that it can never become a reflex.
+19. As a user, I want the string impossible to paste, so that the cost is real
+    rather than symbolic.
+19a. As a user, I want a wrong keystroke refused as I type it rather than at
+    the end, so that one slip does not cost me the whole attempt.
+19b. As a user, I want to see how far through the string I am, so that it does
+    not feel endless.
 20. As a user, I want skipping to start a fresh Session immediately, so that
     skipping costs me the rest rather than postponing it.
 21. As a user, I want my skips counted and shown back to me, so that I notice
@@ -85,7 +89,8 @@ counted and shown back — rather than a reflex.
     Overlay itself, so that a bad value is correctable without sitting through
     it.
 32. As a user looking at the Overlay, I want a quit control there, so that the
-    app is never a trap.
+    app is never a trap — gated by the same challenge, so quitting is not a
+    way around a Break.
 33. As a user, I want settings to persist across restarts, so that I configure
     once.
 34. As a user, I want the app to start at login, so that I do not have to
@@ -220,8 +225,8 @@ There is no prior art in this repo — it is the first code in it.
 - Enabling a cap on Escapes. `EscapePolicy.maxPerDay` exists and works, but
   nothing selects it: the policy is always `.unlimited`. It is kept as the
   agreed hook for adding a cap later without reshaping anything.
-- Configurable Escape hold duration, Overlay appearance, warning lead time, or
-  choosing which Displays are covered.
+- Configurable challenge length or alphabet, Overlay appearance, warning lead
+  time, or choosing which Displays are covered.
 - Sounds.
 - Any persistence of Session progress across launches.
 - A `CGEventTap`, and the Accessibility permission it would require.

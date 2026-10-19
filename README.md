@@ -5,8 +5,9 @@ A break reminder for macOS that you cannot wave away by reflex.
 During a break it covers **every** display, sits above fullscreen apps, and is
 present on every Space — so swiping to another desktop lands you back on it.
 Cmd-Tab, Mission Control, the Dock and the menu bar are all disabled while it
-is up. Skipping a break is possible, but it takes a deliberate three-second
-key hold, and it is counted and shown back to you.
+is up. Skipping a break is possible, but it costs you: you have to retype a
+random hundred-character string, which cannot be pasted. Quitting the app
+costs the same. Skips are counted and shown back to you.
 
 ## How it works
 
@@ -52,6 +53,18 @@ Needs Xcode 26 or newer. There is no `.xcodeproj` — see
 Session length, break length, the pre-break warning and launch-at-login, from
 the menu bar during a session or the gear on the overlay while idle. Session
 1–180 min, break 5–600 s.
+
+## Skipping and quitting
+
+Both show a hundred random alphanumeric characters that must be retyped
+exactly. Paste, drag-and-drop and Services are all blocked on the field, and
+the string itself is not selectable, so it has to be typed — about half a
+minute of it. Wrong keystrokes simply do not land, so you never lose a
+part-finished attempt to one slip.
+
+This is a cost, not a lock. Force Quit still works, and so does a screenshot
+and an OCR tool. The point is that skipping is no longer the path of least
+resistance. See [ADR 0005](docs/adr/0005-retyping-a-random-string-instead-of-a-key-hold.md).
 
 ## It cannot trap you
 
