@@ -13,9 +13,33 @@ final class SettingsModel: ObservableObject {
     @Published var sessionsToday = 0
     @Published var escapesToday = 0
     @Published var loginItemError: String?
+    /// Non-nil while the user is typing out the quit challenge.
+    @Published var quitChallenge: ChallengeModel?
 
     var onConfigChange: (Config) -> Void = { _ in }
+    /// Called only once the quit challenge has been typed out in full.
     var onQuit: () -> Void = {}
+    /// Lets the menu bar stop its popover closing under a half-typed
+    /// challenge: losing a hundred characters to a stray click would be
+    /// infuriating.
+    var onChallengeActiveChange: (Bool) -> Void = { _ in }
+
+    func beginQuitChallenge() {
+        quitChallenge = ChallengeModel(
+            kind: .quit,
+            prompt: "Type this exactly to quit Eye Protector."
+        ) { [weak self] in
+            self?.quitChallenge = nil
+            self?.onChallengeActiveChange(false)
+            self?.onQuit()
+        }
+        onChallengeActiveChange(true)
+    }
+
+    func cancelQuitChallenge() {
+        quitChallenge = nil
+        onChallengeActiveChange(false)
+    }
 
     private var isSyncing = false
 
@@ -140,7 +164,13 @@ struct SettingsView: View {
 
             Divider()
 
-            Button("Quit Eye Protector", action: model.onQuit)
+            if let challenge = model.quitChallenge {
+                ChallengeView(model: challenge) {
+                    model.cancelQuitChallenge()
+                }
+            } else {
+                Button("Quit Eye Protector", action: model.beginQuitChallenge)
+            }
         }
         .padding(16)
         .frame(width: 280)

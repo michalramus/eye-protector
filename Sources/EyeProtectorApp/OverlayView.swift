@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// What the Overlay is currently showing. Idle and Break look deliberately
-/// different: during a Break there is nothing to press, which is the point.
+/// different: during a Break there is nothing to press but Skip, which is the
+/// point.
 enum OverlayPhase: Equatable {
     case idle
     case `break`(remaining: TimeInterval, escapable: Bool)
@@ -10,9 +11,9 @@ enum OverlayPhase: Equatable {
 @MainActor
 final class OverlayModel: ObservableObject {
     @Published var phase: OverlayPhase = .idle
-    /// Set while the user is holding the Escape key, 0...1.
-    @Published var escapeProgress: Double = 0
     @Published var showsSettings = false
+    /// Non-nil while the user is working through a retype challenge.
+    @Published var challenge: ChallengeModel?
 
     /// Settings are reachable from the Overlay because Lockout hides the menu
     /// bar: without this, a 180-minute Session could not be corrected without
@@ -20,7 +21,43 @@ final class OverlayModel: ObservableObject {
     var settings: SettingsModel?
 
     var onStart: () -> Void = {}
+    /// Called only once a skip challenge has been typed out in full.
+    var onSkip: () -> Void = {}
+    /// Called only once a quit challenge has been typed out in full.
     var onQuit: () -> Void = {}
+
+    func beginSkipChallenge() {
+        challenge = ChallengeModel(
+            kind: .skip,
+            prompt: "Type this exactly to skip the rest of your break."
+        ) { [weak self] in
+            self?.challenge = nil
+            self?.onSkip()
+        }
+    }
+
+    func beginQuitChallenge() {
+        challenge = ChallengeModel(
+            kind: .quit,
+            prompt: "Type this exactly to quit Eye Protector."
+        ) { [weak self] in
+            self?.challenge = nil
+            self?.onQuit()
+        }
+    }
+
+    func cancelChallenge() {
+        challenge = nil
+    }
+
+    /// The Break ended on its own while the user was still typing. Finishing
+    /// now would skip nothing, so drop it rather than let them spend another
+    /// fifty keystrokes on a no-op.
+    func abandonSkipChallenge() {
+        if challenge?.kind == .skip {
+            challenge = nil
+        }
+    }
 }
 
 struct OverlayView: View {
@@ -30,11 +67,17 @@ struct OverlayView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            switch model.phase {
-            case .idle:
-                idle
-            case .break(let remaining, let escapable):
-                breakScreen(remaining: remaining, escapable: escapable)
+            if let challenge = model.challenge {
+                ChallengeView(model: challenge) {
+                    model.cancelChallenge()
+                }
+            } else {
+                switch model.phase {
+                case .idle:
+                    idle
+                case .break(let remaining, let escapable):
+                    breakScreen(remaining: remaining, escapable: escapable)
+                }
             }
         }
         .foregroundStyle(.white)
@@ -62,7 +105,7 @@ struct OverlayView: View {
                 } label: {
                     Label("Settings", systemImage: "gearshape")
                 }
-                Button("Quit", action: model.onQuit)
+                Button("Quit", action: model.beginQuitChallenge)
             }
             .buttonStyle(.plain)
             .font(.system(size: 13))
@@ -88,22 +131,12 @@ struct OverlayView: View {
                 .foregroundStyle(.secondary)
 
             if escapable {
-                escapeHint
+                Button("Skip this break", action: model.beginSkipChallenge)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 24)
             }
         }
-    }
-
-    private var escapeHint: some View {
-        VStack(spacing: 8) {
-            Text("Hold esc to skip")
-                .font(.system(size: 12))
-                .foregroundStyle(.tertiary)
-
-            ProgressView(value: model.escapeProgress)
-                .progressViewStyle(.linear)
-                .frame(width: 140)
-                .opacity(model.escapeProgress > 0 ? 1 : 0)
-        }
-        .padding(.top, 24)
     }
 }

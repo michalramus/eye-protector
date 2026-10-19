@@ -11,7 +11,6 @@ final class CycleController {
     private let lockout: Lockout
     private let store: SettingsStore
     private let hud = WarningHUD()
-    private let escape = EscapeMonitor()
     private let nets: SafetyNets
 
     private var ticker: Timer?
@@ -39,12 +38,10 @@ final class CycleController {
         )
 
         overlay.model.onStart = { [weak self] in self?.send(.startPressed) }
+        // Both of these fire only after the retype challenge has been
+        // completed; the Overlay owns that interaction.
+        overlay.model.onSkip = { [weak self] in self?.send(.escapeCompleted) }
         overlay.model.onQuit = { NSApp.terminate(nil) }
-
-        escape.onProgress = { [weak self] progress in
-            self?.overlay.model.escapeProgress = progress
-        }
-        escape.onComplete = { [weak self] in self?.send(.escapeCompleted) }
     }
 
     isolated deinit {
@@ -82,7 +79,6 @@ final class CycleController {
             apply(effect)
         }
         refreshOverlayPhase()
-        updateEscapeArming()
         updateDeadMansSwitch()
         onChange()
     }
@@ -117,6 +113,7 @@ final class CycleController {
     private func refreshOverlayPhase() {
         switch engine.state {
         case .idle:
+            overlay.model.abandonSkipChallenge()
             setOverlayPhase(.idle)
 
         case .break(let endsAt, let escapable):
@@ -137,17 +134,6 @@ final class CycleController {
     private func setOverlayPhase(_ phase: OverlayPhase) {
         guard overlay.model.phase != phase else { return }
         overlay.model.phase = phase
-    }
-
-    private func updateEscapeArming() {
-        if case .break(_, let escapable) = engine.state, escapable {
-            escape.arm()
-        } else {
-            escape.disarm()
-            if overlay.model.escapeProgress != 0 {
-                overlay.model.escapeProgress = 0
-            }
-        }
     }
 
     /// The guarantee from ADR 0004: the user reaches Idle — where Start is one
@@ -191,7 +177,6 @@ final class CycleController {
         overlay.present()
         lockout.engage()
         refreshOverlayPhase()
-        updateEscapeArming()
         onChange()
     }
 

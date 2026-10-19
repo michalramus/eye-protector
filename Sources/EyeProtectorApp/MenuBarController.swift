@@ -24,6 +24,12 @@ final class MenuBarController {
         popover.contentViewController = NSHostingController(
             rootView: SettingsView(model: settings)
         )
+
+        settings.onChallengeActiveChange = { [weak popover] isActive in
+            // A transient popover closes on the first click elsewhere, which
+            // would throw away a part-typed challenge.
+            popover?.behavior = isActive ? .applicationDefined : .transient
+        }
     }
 
     func update(state: CycleState) {
