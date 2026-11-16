@@ -1,5 +1,6 @@
 import SwiftUI
 import EyeProtectorCore
+import ShieldUI
 
 /// Backs both places settings can be reached: the menu-bar popover during a
 /// Session, and the gear on the Overlay while Idle. One view, two hosts.
@@ -26,7 +27,6 @@ final class SettingsModel: ObservableObject {
 
     func beginQuitChallenge() {
         quitChallenge = ChallengeModel(
-            kind: .quit,
             prompt: "Type this exactly to quit Eye Protector."
         ) { [weak self] in
             self?.quitChallenge = nil

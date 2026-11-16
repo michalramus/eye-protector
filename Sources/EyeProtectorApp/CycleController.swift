@@ -1,5 +1,6 @@
 import AppKit
 import EyeProtectorCore
+import ShieldUI
 
 /// The adapter between the pure `CycleEngine` and the machine: it supplies the
 /// clock, turns system notifications into events, and performs the effects the

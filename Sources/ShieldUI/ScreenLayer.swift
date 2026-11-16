@@ -8,7 +8,7 @@ extension NSWindow {
     /// `canJoinAllSpaces` is load-bearing, not decoration. ADR 0003 records
     /// that the Space swipe is *not* blocked; what makes it pointless is the
     /// window already being on the Space the user arrives at.
-    func joinEveryScreenLayer() {
+    public func joinEveryScreenLayer() {
         level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
         collectionBehavior = [
             .canJoinAllSpaces,
@@ -26,8 +26,8 @@ extension NSWindow {
 /// Deliberately not a count: swapping one Display for another leaves the count
 /// unchanged while the frames move, which would strand windows on stale
 /// geometry and leave part of a screen uncovered.
-enum ScreenArrangement {
-    static var signature: [String] {
+public enum ScreenArrangement {
+    public static var signature: [String] {
         NSScreen.screens.map { screen in
             let number = screen.deviceDescription[
                 NSDeviceDescriptionKey("NSScreenNumber")

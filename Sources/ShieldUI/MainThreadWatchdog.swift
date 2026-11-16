@@ -21,8 +21,8 @@ import Synchronization
 /// Lock-free on purpose: a mutex would be held by the main thread at exactly
 /// the wrong moment, and the watchdog would block on the stall it exists to
 /// notice.
-final class MainThreadWatchdog: Sendable {
-    static let shared = MainThreadWatchdog()
+public final class MainThreadWatchdog: Sendable {
+    public static let shared = MainThreadWatchdog()
 
     /// Monotonic nanoseconds at the last main-thread heartbeat; 0 before the
     /// first one.
@@ -34,7 +34,7 @@ final class MainThreadWatchdog: Sendable {
 
     private init() {}
 
-    func start(stallLimit limit: TimeInterval) {
+    public func start(stallLimit limit: TimeInterval) {
         limitNanoseconds.store(StallPolicy(limit: limit).limitNanoseconds, ordering: .relaxed)
 
         let (exchanged, _) = hasStarted.compareExchange(
@@ -58,7 +58,7 @@ final class MainThreadWatchdog: Sendable {
     }
 
     /// Called from the main thread on every tick of the cycle.
-    func beat() {
+    public func beat() {
         lastBeat.store(DispatchTime.now().uptimeNanoseconds, ordering: .relaxed)
     }
 

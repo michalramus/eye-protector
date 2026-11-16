@@ -7,9 +7,13 @@ let package = Package(
     targets: [
         .target(name: "EyeProtectorCore"),
         .target(name: "CurfewCore"),
+        .target(
+            name: "ShieldUI",
+            dependencies: ["EyeProtectorCore"]
+        ),
         .executableTarget(
             name: "EyeProtectorApp",
-            dependencies: ["EyeProtectorCore"]
+            dependencies: ["EyeProtectorCore", "ShieldUI"]
         ),
         .testTarget(
             name: "EyeProtectorCoreTests",

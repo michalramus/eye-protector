@@ -1,4 +1,5 @@
 import AppKit
+import ShieldUI
 import SwiftUI
 
 /// Owns one `OverlayWindow` per Display, all showing the same model.

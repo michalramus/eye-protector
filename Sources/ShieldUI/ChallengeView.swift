@@ -1,17 +1,8 @@
 import EyeProtectorCore
 import SwiftUI
 
-/// Which act the challenge is standing in front of. Kept because a skip
-/// challenge stops being meaningful the moment the Break ends, while a quit
-/// challenge never does.
-enum ChallengeKind: Equatable {
-    case skip
-    case quit
-}
-
 @MainActor
-final class ChallengeModel: ObservableObject {
-    let kind: ChallengeKind
+public final class ChallengeModel: ObservableObject {
     @Published private(set) var challenge: Challenge
     @Published var typed: String = "" {
         didSet { clampAndCheck() }
@@ -21,11 +12,14 @@ final class ChallengeModel: ObservableObject {
     private let onPassed: () -> Void
     private var isClamping = false
 
-    init(kind: ChallengeKind, prompt: String, onPassed: @escaping () -> Void) {
-        self.kind = kind
+    public init(
+        prompt: String,
+        length: Int = Challenge.defaultLength,
+        onPassed: @escaping () -> Void
+    ) {
         self.prompt = prompt
         self.onPassed = onPassed
-        challenge = .random()
+        challenge = .random(length: length)
     }
 
     var progress: Double {
@@ -59,11 +53,16 @@ final class ChallengeModel: ObservableObject {
     }
 }
 
-struct ChallengeView: View {
+public struct ChallengeView: View {
     @ObservedObject var model: ChallengeModel
     var onCancel: () -> Void
 
-    var body: some View {
+    public init(model: ChallengeModel, onCancel: @escaping () -> Void) {
+        self.model = model
+        self.onCancel = onCancel
+    }
+
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(model.prompt)
                 .font(.system(size: 13, weight: .medium))

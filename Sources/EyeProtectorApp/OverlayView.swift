@@ -1,3 +1,4 @@
+import ShieldUI
 import SwiftUI
 
 /// What the Overlay is currently showing. Idle and Break look deliberately
@@ -14,6 +15,14 @@ final class OverlayModel: ObservableObject {
     @Published var showsSettings = false
     /// Non-nil while the user is working through a retype challenge.
     @Published var challenge: ChallengeModel?
+    /// What the live challenge is for, so a skip challenge can be abandoned
+    /// when the Break ends while a quit challenge never is.
+    private var challengePurpose: ChallengePurpose?
+
+    private enum ChallengePurpose {
+        case skip
+        case quit
+    }
 
     /// Settings are reachable from the Overlay because Lockout hides the menu
     /// bar: without this, a 180-minute Session could not be corrected without
@@ -28,34 +37,38 @@ final class OverlayModel: ObservableObject {
 
     func beginSkipChallenge() {
         challenge = ChallengeModel(
-            kind: .skip,
             prompt: "Type this exactly to skip the rest of your break."
         ) { [weak self] in
             self?.challenge = nil
+            self?.challengePurpose = nil
             self?.onSkip()
         }
+        challengePurpose = .skip
     }
 
     func beginQuitChallenge() {
         challenge = ChallengeModel(
-            kind: .quit,
             prompt: "Type this exactly to quit Eye Protector."
         ) { [weak self] in
             self?.challenge = nil
+            self?.challengePurpose = nil
             self?.onQuit()
         }
+        challengePurpose = .quit
     }
 
     func cancelChallenge() {
         challenge = nil
+        challengePurpose = nil
     }
 
     /// The Break ended on its own while the user was still typing. Finishing
     /// now would skip nothing, so drop it rather than let them spend another
     /// fifty keystrokes on a no-op.
     func abandonSkipChallenge() {
-        if challenge?.kind == .skip {
+        if challengePurpose == .skip {
             challenge = nil
+            challengePurpose = nil
         }
     }
 }

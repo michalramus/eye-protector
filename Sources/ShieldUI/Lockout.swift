@@ -6,12 +6,12 @@ import AppKit
 /// ADR 0004. The dead-man's switch that guarantees Lockout ends lives in the
 /// cycle adapter, so that a wedged engine cannot keep the machine captive.
 @MainActor
-final class Lockout {
+public final class Lockout {
     private let nets: SafetyNets
     private(set) var isEngaged = false
     private var watchdog: (any NSObjectProtocol)?
 
-    init(nets: SafetyNets = .lenient) {
+    public init(nets: SafetyNets = .lenient) {
         self.nets = nets
     }
 
@@ -32,7 +32,7 @@ final class Lockout {
         return options
     }
 
-    func engage() {
+    public func engage() {
         guard !isEngaged else { return }
         isEngaged = true
         MainThreadWatchdog.shared.setArmed(true)
@@ -57,7 +57,7 @@ final class Lockout {
         }
     }
 
-    func disengage() {
+    public func disengage() {
         guard isEngaged else { return }
         isEngaged = false
         MainThreadWatchdog.shared.setArmed(false)

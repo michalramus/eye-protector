@@ -1,4 +1,5 @@
 import AppKit
+import ShieldUI
 import SwiftUI
 
 @MainActor
