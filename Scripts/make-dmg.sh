@@ -1,14 +1,35 @@
 #!/usr/bin/env bash
-# Packages an already-built EyeProtector.app into a compressed DMG.
+# Packages an already-built app into a compressed DMG. Usage:
+#   make-dmg.sh [version] [eyeprotector|curfew]
+# Both default to what they always were: "dev" and Eye Protector.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 VERSION="${1:-dev}"
-APP="Eye Protector.app"
+WHICH="${2:-eyeprotector}"
+
+case "$WHICH" in
+  eyeprotector)
+    APP="Eye Protector.app"
+    VOLUME="Eye Protector"
+    NAME="EyeProtector"
+    BUILD="./build.sh release"
+    ;;
+  curfew)
+    APP="Curfew.app"
+    VOLUME="Curfew"
+    NAME="Curfew"
+    BUILD="./build-curfew.sh release"
+    ;;
+  *)
+    echo "unknown app \"$WHICH\" — expected eyeprotector or curfew" >&2
+    exit 1
+    ;;
+esac
 
 if [[ ! -d "$APP" ]]; then
-  echo "no \"$APP\" — run ./build.sh release first" >&2
+  echo "no \"$APP\" — run $BUILD first" >&2
   exit 1
 fi
 
@@ -20,11 +41,11 @@ cp -R "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 
 mkdir -p dist
-DMG="dist/EyeProtector-${VERSION}.dmg"
+DMG="dist/${NAME}-${VERSION}.dmg"
 rm -f "$DMG"
 
 hdiutil create \
-  -volname "Eye Protector" \
+  -volname "$VOLUME" \
   -srcfolder "$STAGING" \
   -ov -format UDZO \
   "$DMG" >/dev/null

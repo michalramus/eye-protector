@@ -35,10 +35,15 @@ jobs:
       - name: Build app bundle
         run: ./build.sh release
 
-      - name: Package DMG
-        run: ./Scripts/make-dmg.sh "${GITHUB_REF_NAME//\//-}"
+      - name: Build Curfew app bundle
+        run: ./build-curfew.sh release
 
-      - name: Upload DMG
+      - name: Package DMGs
+        run: |
+          ./Scripts/make-dmg.sh "${GITHUB_REF_NAME//\//-}"
+          ./Scripts/make-dmg.sh "${GITHUB_REF_NAME//\//-}" curfew
+
+      - name: Upload DMGs
         uses: actions/upload-artifact@v4
         with:
           name: EyeProtector-${{ github.sha }}
