@@ -1,0 +1,145 @@
+import AppKit
+import ShieldUI
+import SwiftUI
+
+/// One black window per Display, plus Lockout, plus the warning panel.
+///
+/// Built up front and kept, like Eye Protector's Overlay: a window that is
+/// created at the moment the shield rises is a window that is not yet on the
+/// Space the user is looking at.
+///
+/// `sizingOptions = []` is load-bearing, not tidiness — without it the SwiftUI
+/// content pushes a minimum size onto the window and a full-screen shield
+/// grows past the screen, leaving the panel above the top edge and a black
+/// rectangle where the challenge should be.
+@MainActor
+final class ShieldController {
+    let model = ShieldModel()
+
+    private var windows: [OverlayWindow] = []
+    private var warningPanels: [NSPanel] = []
+    private var builtFor: [String] = []
+    private let lockout = Lockout(nets: .lenient)
+    private let warning = WarningModel()
+    private var screenObserver: (any NSObjectProtocol)?
+
+    private(set) var isPresented = false
+    private(set) var isWarning = false
+
+    @MainActor
+    final class WarningModel: ObservableObject {
+        @Published var remaining: TimeInterval = 0
+    }
+
+    init() {
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.screensChanged() }
+        }
+    }
+
+    func present() {
+        rebuildIfNeeded()
+        for window in windows {
+            window.orderFrontRegardless()
+        }
+        windows.first?.makeKey()
+        lockout.engage()
+        isPresented = true
+    }
+
+    func dismiss() {
+        guard isPresented else { return }
+        isPresented = false
+        lockout.disengage()
+        for window in windows {
+            window.orderOut(nil)
+        }
+    }
+
+    func showWarning(remaining: TimeInterval) {
+        rebuildIfNeeded()
+        warning.remaining = remaining
+        guard !isWarning else { return }
+        isWarning = true
+        for panel in warningPanels {
+            panel.orderFrontRegardless()
+        }
+    }
+
+    func hideWarning() {
+        guard isWarning else { return }
+        isWarning = false
+        for panel in warningPanels {
+            panel.orderOut(nil)
+        }
+    }
+
+    private func screensChanged() {
+        builtFor = []
+        rebuildIfNeeded()
+        if isPresented { present() }
+        if isWarning {
+            for panel in warningPanels { panel.orderFrontRegardless() }
+        }
+    }
+
+    private func rebuildIfNeeded() {
+        guard builtFor != ScreenArrangement.signature else { return }
+
+        for window in windows { window.orderOut(nil) }
+        for panel in warningPanels { panel.orderOut(nil) }
+        builtFor = ScreenArrangement.signature
+
+        windows = NSScreen.screens.map { screen in
+            let window = OverlayWindow(screen: screen)
+            let host = NSHostingView(rootView: ShieldView(model: model))
+            host.sizingOptions = []
+            host.frame = window.contentLayoutRect
+            host.autoresizingMask = [.width, .height]
+            window.contentView = host
+            return window
+        }
+
+        warningPanels = NSScreen.screens.map { screen in
+            let panel = NSPanel(
+                contentRect: .zero,
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            panel.joinEveryScreenLayer()
+            panel.isOpaque = false
+            panel.backgroundColor = .clear
+            panel.hasShadow = true
+            panel.ignoresMouseEvents = true
+
+            let host = NSHostingView(
+                rootView: WarningHost(model: warning)
+            )
+            host.frame.size = host.fittingSize
+            panel.contentView = host
+            panel.setContentSize(host.fittingSize)
+
+            let visible = screen.visibleFrame
+            panel.setFrameOrigin(
+                NSPoint(
+                    x: visible.maxX - host.fittingSize.width - 20,
+                    y: visible.maxY - host.fittingSize.height - 20
+                )
+            )
+            return panel
+        }
+    }
+
+    private struct WarningHost: View {
+        @ObservedObject var model: WarningModel
+
+        var body: some View {
+            CurfewWarningView(remaining: model.remaining)
+        }
+    }
+}
