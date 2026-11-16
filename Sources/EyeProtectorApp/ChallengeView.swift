@@ -95,7 +95,10 @@ struct ChallengeView: View {
             }
         }
         .padding(16)
-        .frame(maxWidth: 420)
+        // Fixed rather than a maximum: under a narrow width proposal the
+        // challenge string, which has nothing to break on, wraps to one
+        // character per line and the panel becomes two thousand points tall.
+        .frame(width: 420)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 }
