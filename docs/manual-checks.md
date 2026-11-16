@@ -111,3 +111,46 @@ during it, which is the whole point.
 
 - [ ] The process exits by itself and the desktop comes back
 - [ ] Without the env var set, normal use never triggers it
+
+## Curfew
+
+**These need a real install, and an installed Curfew blocks the screen.** Run
+them only on a machine you are willing to have blocked, with another way in
+ready (see "Ways out" in [curfew.md](curfew.md)). Nothing here is safe to try
+on a machine you need.
+
+Setup: `./build-curfew.sh release`, copy `Curfew.app` to `/Applications`, then
+`sudo /Applications/Curfew.app/Contents/MacOS/Curfew --install`. Shorthand
+below: `curfew` is that binary. To avoid waiting for 20:00, edit the config with
+`sudo` and set `nightStart` a couple of minutes ahead of now (the daemon
+reloads within a second), and `nightGrace` to 120 so a full cycle is quick.
+Set it back afterwards.
+
+- [ ] The shield appears when the night window opens: wait for `nightStart`.
+      Pass: every display is covered within a few seconds of that minute, and
+      `curfew --status` says `shield: up`
+- [ ] Typing the string buys the configured time: type the challenge in full.
+      Pass: the shield drops, `--status` shows `shield: down` and
+      `unlocks:` one higher, and it comes back after `nightGrace` (with the
+      warning shown `warningLead` before). Wrong keystrokes do nothing and the
+      field rejects paste
+- [ ] Killing the agent keeps the grace: while unlocked, run
+      `pkill -f 'Curfew --agent'`. Pass: within a few seconds the agent is
+      running again (`pgrep -f 'Curfew --agent'`), the shield is still down,
+      and `--status` shows the same unlock time rather than a fresh one
+- [ ] The daemon restores a booted-out agent: run
+      `launchctl bootout gui/$UID/com.michalramus.curfew.agent`. Pass:
+      `launchctl list | grep curfew.agent` shows the job again within ten
+      seconds, with no password asked
+- [ ] Deleting the state file while unlocked brings the shield back:
+      `sudo rm "/Library/Application Support/Curfew/state.json"`. Pass: the
+      shield returns within a few seconds and the grace is gone
+- [ ] Rebooting inside the night window lands on a shield: reboot with the
+      window open and log in. Pass: the shield is up at login, with no moment
+      of a usable desktop beyond the login screen itself
+- [ ] `--uninstall` leaves no jobs behind: run
+      `sudo /Applications/Curfew.app/Contents/MacOS/Curfew --uninstall`. Pass:
+      `launchctl list | grep curfew` prints nothing, `sudo launchctl list |
+      grep curfew` prints nothing, both plists are gone from
+      `/Library/LaunchDaemons` and `/Library/LaunchAgents`, and the shield
+      has gone

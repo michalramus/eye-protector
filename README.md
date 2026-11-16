@@ -9,6 +9,10 @@ is up. Skipping a break is possible, but it costs you: you have to retype a
 random hundred-character string, which cannot be pasted. Quitting the app
 costs the same. Skips are counted and shown back to you.
 
+This repository also holds Curfew, a second app that blocks the machine at
+night and at weekends. It has its own page: [docs/curfew.md](docs/curfew.md).
+Everything below is about Eye Protector.
+
 ## How it works
 
 ```
@@ -44,6 +48,9 @@ Apple Silicon only.
 ./Scripts/make-dmg.sh 1.0   # packages it into dist/
 swift test                  # runs the cycle engine tests
 ```
+
+Curfew builds the same way, with `./build-curfew.sh release` and
+`./Scripts/make-dmg.sh 1.0 curfew`.
 
 Needs Xcode 26 or newer. There is no `.xcodeproj` — see
 [ADR 0001](docs/adr/0001-swiftpm-package-over-xcode-project.md) for why.
@@ -86,6 +93,8 @@ See [ADR 0004](docs/adr/0004-force-quit-stays-enabled.md).
 | --- | --- |
 | `Sources/EyeProtectorCore` | The cycle as a pure, clock-free value type. All the tests point here. |
 | `Sources/EyeProtectorApp` | AppKit adapter: windows, lockout, menu bar, settings. |
+| `Sources/CurfewCore`, `Sources/CurfewApp` | Curfew: the schedule as a pure value, and the root daemon and shield agent. See [docs/curfew.md](docs/curfew.md). |
+| `Sources/ShieldUI` | The overlay, challenge field and safety nets both apps share. |
 | `CONTEXT.md` | Glossary. Session, Break, Space, Lockout and friends mean specific things. |
 | `docs/spec.md` | What was asked for, as user stories. |
 | `docs/adr/` | Decisions that would otherwise look arbitrary. |
