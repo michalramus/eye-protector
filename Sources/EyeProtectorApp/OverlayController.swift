@@ -66,6 +66,14 @@ final class OverlayController {
         windows = NSScreen.screens.map { screen in
             let window = OverlayWindow(screen: screen)
             let host = NSHostingView(rootView: OverlayView(model: model))
+            // A hosting view that is a window's contentView pushes its
+            // content's size limits onto the window. The retype challenge has
+            // a very tall minimum height — a hundred characters wrapped one
+            // per line — so with this left on, showing it resizes the Overlay
+            // window past the screen and the panel ends up above the top edge:
+            // a black screen with nothing on it. The Overlay is sized by the
+            // Display, never by what it is showing.
+            host.sizingOptions = []
             host.frame = window.contentLayoutRect
             host.autoresizingMask = [.width, .height]
             window.contentView = host
