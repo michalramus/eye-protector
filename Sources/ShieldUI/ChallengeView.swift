@@ -22,6 +22,18 @@ public final class ChallengeModel: ObservableObject {
         challenge = .random(length: length)
     }
 
+    /// For a challenge somebody else issued.
+    ///
+    /// The curfew daemon hands one down, because there the process that
+    /// checks the typing is not the process that displays it — and a
+    /// challenge the displaying process made up would be one it could also
+    /// decide it had passed.
+    public init(prompt: String, challenge: Challenge, onPassed: @escaping () -> Void) {
+        self.prompt = prompt
+        self.onPassed = onPassed
+        self.challenge = challenge
+    }
+
     var progress: Double {
         challenge.progress(of: typed)
     }
