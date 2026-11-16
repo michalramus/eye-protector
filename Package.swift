@@ -15,6 +15,10 @@ let package = Package(
             name: "EyeProtectorApp",
             dependencies: ["EyeProtectorCore", "ShieldUI"]
         ),
+        .executableTarget(
+            name: "CurfewApp",
+            dependencies: ["CurfewCore", "EyeProtectorCore", "ShieldUI"]
+        ),
         .testTarget(
             name: "EyeProtectorCoreTests",
             dependencies: ["EyeProtectorCore"]
