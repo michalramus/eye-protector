@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v15)],
     targets: [
         .target(name: "EyeProtectorCore"),
+        .target(name: "CurfewCore"),
         .executableTarget(
             name: "EyeProtectorApp",
             dependencies: ["EyeProtectorCore"]
@@ -13,6 +14,10 @@ let package = Package(
         .testTarget(
             name: "EyeProtectorCoreTests",
             dependencies: ["EyeProtectorCore"]
+        ),
+        .testTarget(
+            name: "CurfewCoreTests",
+            dependencies: ["CurfewCore"]
         ),
     ]
 )
