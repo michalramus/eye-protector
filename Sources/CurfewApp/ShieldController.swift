@@ -41,7 +41,11 @@ final class ShieldController {
         }
     }
 
+    /// Idempotent on purpose: the agent polls the daemon once a second and
+    /// calls this every time the answer is "shield up". Re-keying the window
+    /// at 1 Hz would fight the text field for the focus.
     func present() {
+        guard !isPresented else { return }
         rebuildIfNeeded()
         for window in windows {
             window.orderFrontRegardless()
@@ -78,13 +82,19 @@ final class ShieldController {
         }
     }
 
+    /// A Display attached or removed rebuilds everything, so a newly
+    /// connected screen never shows a gap in the shield.
     private func screensChanged() {
+        let wasPresented = isPresented
+        let wasWarning = isWarning
+        let remaining = warning.remaining
+
+        isPresented = false
+        isWarning = false
         builtFor = []
-        rebuildIfNeeded()
-        if isPresented { present() }
-        if isWarning {
-            for panel in warningPanels { panel.orderFrontRegardless() }
-        }
+
+        if wasPresented { present() }
+        if wasWarning { showWarning(remaining: remaining) }
     }
 
     private func rebuildIfNeeded() {
