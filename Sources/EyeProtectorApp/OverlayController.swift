@@ -77,7 +77,7 @@ final class OverlayController {
             host.sizingOptions = []
             host.frame = window.contentLayoutRect
             host.autoresizingMask = [.width, .height]
-            window.contentView = host
+            window.install(content: host)
             return window
         }
     }

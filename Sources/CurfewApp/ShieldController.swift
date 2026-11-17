@@ -123,7 +123,7 @@ final class ShieldController {
             host.sizingOptions = []
             host.frame = window.contentLayoutRect
             host.autoresizingMask = [.width, .height]
-            window.contentView = host
+            window.install(content: host)
             return window
         }
 
