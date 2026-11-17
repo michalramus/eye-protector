@@ -11,7 +11,7 @@ import ShieldUI
 /// reach the daemon, which is the case it most wants to.
 @MainActor
 final class CurfewAgent: NSObject, NSApplicationDelegate {
-    private let client: ControlSocketClient
+    private let client: any CurfewControl
     private let shield = ShieldController()
     private var ticker: Timer?
     private var requestInFlight = false
@@ -19,13 +19,17 @@ final class CurfewAgent: NSObject, NSApplicationDelegate {
     /// not throw away what is being typed.
     private var shownChallenge: String?
 
-    init(paths: Paths = .current) {
-        client = ControlSocketClient(path: paths.socket)
+    init(control: any CurfewControl) {
+        client = control
     }
 
-    static func run() -> Never {
+    convenience init(paths: Paths = .current) {
+        self.init(control: ControlSocketClient(path: paths.socket))
+    }
+
+    static func run(control: any CurfewControl = ControlSocketClient(path: Paths.current.socket)) -> Never {
         let app = NSApplication.shared
-        let agent = CurfewAgent()
+        let agent = CurfewAgent(control: control)
         app.delegate = agent
         // NSApplication does not retain its delegate.
         objc_setAssociatedObject(app, "curfew.agent", agent, .OBJC_ASSOCIATION_RETAIN)
