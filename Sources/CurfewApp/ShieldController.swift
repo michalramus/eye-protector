@@ -8,6 +8,13 @@ import SwiftUI
 /// created at the moment the shield rises is a window that is not yet on the
 /// Space the user is looking at.
 ///
+/// Lockout here is `SafetyNets.curfew`, a deliberate choice by the user of
+/// this app, unlike Eye Protector's lenient one: with the shield up there is
+/// no app switching and no Force Quit, but logout, restart and shutdown from
+/// the Apple menu still work. `mainThreadStallLimit` still applies. The ways
+/// out are typing the string, restart or logout from the Apple menu, ssh,
+/// a safe-mode boot and the main-thread watchdog.
+///
 /// `sizingOptions = []` is load-bearing, not tidiness — without it the SwiftUI
 /// content pushes a minimum size onto the window and a full-screen shield
 /// grows past the screen, leaving the panel above the top edge and a black
@@ -19,7 +26,7 @@ final class ShieldController {
     private var windows: [OverlayWindow] = []
     private var warningPanels: [NSPanel] = []
     private var builtFor: [String] = []
-    private let lockout = Lockout(nets: .lenient)
+    private let lockout = Lockout(nets: .curfew)
     private let warning = WarningModel()
     private var screenObserver: (any NSObjectProtocol)?
 

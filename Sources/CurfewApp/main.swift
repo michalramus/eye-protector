@@ -65,6 +65,28 @@ func printStatus() {
     }
 }
 
+/// Held for the life of the process and never closed: the lock is the
+/// descriptor, and `flock` drops it when the process dies, however it dies.
+nonisolated(unsafe) var instanceLockDescriptor: Int32 = -1
+
+/// One standalone Curfew per login session. A login item plus a double-click
+/// would otherwise leave two processes ticking on one state file and both
+/// engaging lockout, and killing one would leave the other holding the screen.
+func takeInstanceLock(_ paths: Paths) {
+    let descriptor = open(paths.instanceLock, O_CREAT | O_RDWR, 0o644)
+    // If the lock file cannot even be opened, run anyway: refusing to start
+    // would leave no curfew at all, which is the worse failure.
+    guard descriptor >= 0 else { return }
+
+    guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
+        FileHandle.standardError.write(
+            Data("curfew: already running; that copy is responsible for the screen\n".utf8)
+        )
+        exit(EXIT_SUCCESS)
+    }
+    instanceLockDescriptor = descriptor
+}
+
 /// Attempted once, not on every launch: the switch in System Settings is the
 /// user's, and an app that re-registered each time it started would silently
 /// undo them turning it off.
@@ -126,10 +148,12 @@ case .none:
             MainActor.assumeIsolated { CurfewAgent.run() }
         } else {
             let userPaths = Paths.userMode()
+            // Before anything that ticks or touches the state file.
             try? FileManager.default.createDirectory(
                 atPath: userPaths.supportDirectory,
                 withIntermediateDirectories: true
             )
+            takeInstanceLock(userPaths)
             registerLoginItemOnce(userPaths)
 
             // Both halves in this process, under the user's own home and

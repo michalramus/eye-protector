@@ -50,3 +50,14 @@ public struct SafetyNets: Sendable, Equatable {
         sessionTerminationEnabled: false
     )
 }
+
+extension SafetyNets {
+    /// Curfew's setting, chosen by the user of it: Force Quit goes, because
+    /// an app that can be dismissed with a keystroke is not a curfew, while
+    /// ending the session stays, because turning every problem into a held
+    /// power button is a worse bargain than any discipline it buys.
+    public static let curfew = SafetyNets(
+        forceQuitEnabled: false,
+        sessionTerminationEnabled: true
+    )
+}
