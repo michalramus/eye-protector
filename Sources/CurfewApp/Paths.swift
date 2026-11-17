@@ -60,6 +60,9 @@ struct Paths: Sendable {
     var state: String { supportDirectory + "/state.json" }
     var events: String { supportDirectory + "/events.log" }
 
+    /// Present once Curfew has tried to register itself as a login item.
+    var loginItemMarker: String { supportDirectory + "/login-item-registered" }
+
     /// Short on purpose: `sockaddr_un` has room for about a hundred
     /// characters and silently truncating a socket path is a bug that only
     /// shows up as "connection refused".

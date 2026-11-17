@@ -1,6 +1,7 @@
 import CurfewCore
 import Darwin
 import Foundation
+import ShieldUI
 
 /// One binary, four jobs: the root daemon, the GUI agent, the installer and a
 /// way to ask what is going on without either.
@@ -64,6 +65,22 @@ func printStatus() {
     }
 }
 
+/// Attempted once, not on every launch: the switch in System Settings is the
+/// user's, and an app that re-registered each time it started would silently
+/// undo them turning it off.
+func registerLoginItemOnce(_ paths: Paths) {
+    guard !FileManager.default.fileExists(atPath: paths.loginItemMarker) else { return }
+
+    switch LoginItem.set(true) {
+    case .success:
+        FileManager.default.createFile(atPath: paths.loginItemMarker, contents: nil)
+    case .failure(let error):
+        // Ad-hoc signing may make `SMAppService` refuse (ADR 0001). A refused
+        // registration must not stop the curfew from running.
+        EventLog(path: paths.events).record("login item not registered: \(error)")
+    }
+}
+
 switch arguments.first {
 case "--daemon":
     CurfewDaemon(paths: paths).run()
@@ -108,10 +125,17 @@ case .none:
         if installed {
             MainActor.assumeIsolated { CurfewAgent.run() }
         } else {
+            let userPaths = Paths.userMode()
+            try? FileManager.default.createDirectory(
+                atPath: userPaths.supportDirectory,
+                withIntermediateDirectories: true
+            )
+            registerLoginItemOnce(userPaths)
+
             // Both halves in this process, under the user's own home and
             // with nothing to restart them: quitting ends it. Not a curfew,
             // see `Paths.userMode`.
-            let daemon = CurfewDaemon(paths: .userMode())
+            let daemon = CurfewDaemon(paths: userPaths)
             daemon.prepare()
             daemon.startTicking()
             MainActor.assumeIsolated { CurfewAgent.run(control: InProcessControl(daemon: daemon)) }
