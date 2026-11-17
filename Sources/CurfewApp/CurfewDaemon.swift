@@ -60,8 +60,7 @@ final class CurfewDaemon: Sendable {
     }
 
     func run() -> Never {
-        prepareDirectories()
-        log.record("daemon started (pid \(getpid()))")
+        prepare()
 
         do {
             try ControlSocketServer(path: paths.socket) { [self] request in
@@ -75,15 +74,33 @@ final class CurfewDaemon: Sendable {
             exit(EXIT_FAILURE)
         }
 
-        var counter = 0
-        while true {
-            tick(now: Date())
-            if counter % Self.superviseEvery == 0 {
-                supervisor.ensureAgentIsLoaded()
+        startTicking()
+        while true { Thread.sleep(forTimeInterval: 3600) }
+    }
+
+    /// Everything `run()` does before it has anything to listen on, split out
+    /// so that a standalone process can have the daemon without the socket.
+    func prepare() {
+        prepareDirectories()
+        log.record("daemon started (pid \(getpid()))")
+    }
+
+    /// The one-second tick on its own thread, so that a caller that has
+    /// other work to do — the standalone app has a run loop — is not blocked.
+    func startTicking() {
+        let thread = Thread { [self] in
+            var counter = 0
+            while true {
+                tick(now: Date())
+                if counter % Self.superviseEvery == 0 {
+                    supervisor.ensureAgentIsLoaded()
+                }
+                counter &+= 1
+                Thread.sleep(forTimeInterval: 1)
             }
-            counter &+= 1
-            Thread.sleep(forTimeInterval: 1)
         }
+        thread.name = "curfew.tick"
+        thread.start()
     }
 
     private func prepareDirectories() {
