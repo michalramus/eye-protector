@@ -28,9 +28,9 @@ struct AgentSupervisor: Sendable {
     }
 
     func ensureAgentIsLoaded() {
-        // Development runs against a relocated prefix have no business
-        // touching the real launchd.
-        guard !paths.isRelocated else { return }
+        // Development runs against a relocated prefix, and user-mode runs,
+        // have no business touching the real launchd.
+        guard paths.supervisesAgent else { return }
         guard let uid = Self.consoleUID() else { return }
 
         if !FileManager.default.fileExists(atPath: paths.agentPlist) {

@@ -23,16 +23,39 @@ struct Paths: Sendable {
         prefix: ProcessInfo.processInfo.environment["CURFEW_ROOT"]
     )
 
-    let prefix: String?
+    /// The layout for a double-clicked `Curfew.app` with no daemon behind it:
+    /// everything under the user's own home, so no root is needed to try it.
+    ///
+    /// This is explicitly not a curfew in the security sense. The state file
+    /// belongs to the user who can edit it, which is exactly what ADR 0006 is
+    /// about why the real layout does not allow. It exists to live with the
+    /// thing before handing it root. There is no socket and no plist here;
+    /// nothing in the standalone path reads either.
+    static func userMode() -> Paths {
+        Paths(prefix: nil, inUserMode: true)
+    }
 
-    var isRelocated: Bool { prefix != nil }
+    let prefix: String?
+    let inUserMode: Bool
+
+    init(prefix: String?, inUserMode: Bool = false) {
+        self.prefix = prefix
+        self.inUserMode = inUserMode
+    }
+
+    /// Only the real root layout may touch launchd: a relocated run is a
+    /// development run and a user-mode run has no root to do it with.
+    var supervisesAgent: Bool { prefix == nil && !inUserMode }
 
     private func path(_ absolute: String) -> String {
         guard let prefix else { return absolute }
         return prefix + absolute
     }
 
-    var supportDirectory: String { path("/Library/Application Support/Curfew") }
+    var supportDirectory: String {
+        if inUserMode { return NSHomeDirectory() + "/Library/Application Support/Curfew" }
+        return path("/Library/Application Support/Curfew")
+    }
     var config: String { supportDirectory + "/config.json" }
     var state: String { supportDirectory + "/state.json" }
     var events: String { supportDirectory + "/events.log" }
