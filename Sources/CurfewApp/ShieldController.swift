@@ -121,8 +121,6 @@ final class ShieldController {
             let window = OverlayWindow(screen: screen)
             let host = NSHostingView(rootView: ShieldView(model: model))
             host.sizingOptions = []
-            host.frame = window.contentLayoutRect
-            host.autoresizingMask = [.width, .height]
             window.install(content: host)
             return window
         }

@@ -74,9 +74,12 @@ final class OverlayController {
             // window past the screen and the panel ends up above the top edge:
             // a black screen with nothing on it. The Overlay is sized by the
             // Display, never by what it is showing.
+            //
+            // `install` now puts this view one level down, which should mean
+            // the extrema never reach the window at all. Kept anyway: the
+            // failure it prevents is a black screen, and one line is a cheap
+            // price for not having to be right about that.
             host.sizingOptions = []
-            host.frame = window.contentLayoutRect
-            host.autoresizingMask = [.width, .height]
             window.install(content: host)
             return window
         }
