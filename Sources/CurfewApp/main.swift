@@ -94,12 +94,28 @@ case "--help", "-h":
     usage()
 
 case .none:
-    // Launched from Finder rather than from a shell — the only sensible
-    // reading is "be the screen".
     if isatty(STDOUT_FILENO) == 1 {
         printStatus()
     } else {
-        MainActor.assumeIsolated { CurfewAgent.run() }
+        // Launched from Finder rather than from a shell. Ask the socket once
+        // to find out whether an installed daemon is behind this launch.
+        //
+        // Unreachable means "standalone" here and not "shield up": the
+        // fail-closed rule is about a daemon that was supposed to be there
+        // and went quiet. At launch nothing was supposed to be there, and a
+        // shield with no challenge would be a black screen with no way out.
+        let installed = (try? ControlSocketClient(path: paths.socket).send(.status)) != nil
+        if installed {
+            MainActor.assumeIsolated { CurfewAgent.run() }
+        } else {
+            // Both halves in this process, under the user's own home and
+            // with nothing to restart them: quitting ends it. Not a curfew,
+            // see `Paths.userMode`.
+            let daemon = CurfewDaemon(paths: .userMode())
+            daemon.prepare()
+            daemon.startTicking()
+            MainActor.assumeIsolated { CurfewAgent.run(control: InProcessControl(daemon: daemon)) }
+        }
     }
 
 case .some(let unknown):
