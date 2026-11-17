@@ -32,6 +32,17 @@ state lives with root. [ADR 0006](adr/0006-curfew-state-belongs-to-a-root-daemon
 has the argument, including why a missing or corrupt file means "shield up"
 and why winding the clock back counts as tampering.
 
+## Double-clicking the app
+
+Without `--install`, opening `Curfew.app` from Finder runs both halves in the
+one process, in the user's own session, with the config and state under
+`~/Library/Application Support/Curfew`. It obeys the same schedule and asks for
+the same challenge. But quitting or killing it ends it and nothing brings it
+back, and the state file is one the user can edit. So it is a way to live with
+the thing before handing it root, not a curfew.
+
+Once `--install` has run, double-clicking attaches to the root daemon instead.
+
 ## Config
 
 `/Library/Application Support/Curfew/config.json`, root-owned. Edit it with
