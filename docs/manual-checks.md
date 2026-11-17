@@ -27,6 +27,10 @@ shut down. All three are deliberate — ADR 0004.
 
 - [ ] Another app stealing focus during a Break does not end Lockout: the
       Overlay takes activation back
+- [ ] One cursor, not two: hover a link in a browser so the pointer is a
+      pointing hand, then wait for the Overlay. Pass: exactly one cursor is
+      visible when it appears, and it moves with the mouse; over the retype
+      field it is the text cursor, elsewhere the arrow
 
 ## The cycle
 
