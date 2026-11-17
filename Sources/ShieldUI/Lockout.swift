@@ -38,6 +38,7 @@ public final class Lockout {
         MainThreadWatchdog.shared.setArmed(true)
         NSApp.activate(ignoringOtherApps: true)
         NSApp.presentationOptions = options
+        redrawCursor()
 
         // Presentation options only apply while this app is active, so losing
         // activation silently ends Lockout however intact the options look.
@@ -53,8 +54,23 @@ public final class Lockout {
                 guard let self, self.isEngaged else { return }
                 NSApp.activate(ignoringOtherApps: true)
                 NSApp.presentationOptions = self.options
+                self.redrawCursor()
             }
         }
+    }
+
+    /// Another app's cursor can stay drawn by the window server after we cover
+    /// it: setting ours is not enough to make the server drop an image it was
+    /// already showing, but hiding and showing the cursor is. That pair looks
+    /// like dead code and is not.
+    ///
+    /// `hide` and `unhide` are counted, so they stay strictly paired inside
+    /// this one synchronous block; splitting them across a notification would
+    /// leave the cursor hidden whenever the second half never ran.
+    private func redrawCursor() {
+        NSCursor.arrow.set()
+        NSCursor.hide()
+        NSCursor.unhide()
     }
 
     public func disengage() {
