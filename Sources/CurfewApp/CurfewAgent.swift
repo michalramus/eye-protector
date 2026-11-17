@@ -39,7 +39,7 @@ final class CurfewAgent: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        MainThreadWatchdog.shared.start(stallLimit: SafetyNets.lenient.mainThreadStallLimit)
+        MainThreadWatchdog.shared.start(stallLimit: ShieldController.nets.mainThreadStallLimit)
         poll()
 
         ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in

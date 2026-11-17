@@ -26,7 +26,13 @@ final class ShieldController {
     private var windows: [OverlayWindow] = []
     private var warningPanels: [NSPanel] = []
     private var builtFor: [String] = []
-    private let lockout = Lockout(nets: .curfew)
+    /// One place for the choice, because the watchdog's stall limit is
+    /// part of the same bargain and reading it from a different set of
+    /// nets than Lockout engages is how a safeguard quietly stops
+    /// matching the lockout it is meant to end.
+    static let nets: SafetyNets = .curfew
+
+    private let lockout = Lockout(nets: ShieldController.nets)
     private let warning = WarningModel()
     private var screenObserver: (any NSObjectProtocol)?
 
