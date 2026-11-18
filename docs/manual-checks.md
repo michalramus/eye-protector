@@ -138,6 +138,9 @@ Set it back afterwards.
       `unlocks:` one higher, and it comes back after `nightGrace` (with the
       warning shown `warningLead` before). Wrong keystrokes do nothing and the
       field rejects paste
+- [ ] The field stays put while typing: type most of the string. Pass: the box
+      neither grows over the string above it nor hides what you have just
+      typed, and the tail being typed is always in view
 - [ ] Killing the agent keeps the grace: while unlocked, run
       `pkill -f 'Curfew --agent'`. Pass: within a few seconds the agent is
       running again (`pgrep -f 'Curfew --agent'`), the shield is still down,
