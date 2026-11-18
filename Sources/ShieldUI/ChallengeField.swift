@@ -51,7 +51,7 @@ struct ChallengeField: NSViewRepresentable {
         Coordinator(text: $text)
     }
 
-    func makeNSView(context: Context) -> NoPasteTextView {
+    func makeNSView(context: Context) -> NSScrollView {
         let view = NoPasteTextView()
         view.delegate = context.coordinator
         view.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
@@ -66,22 +66,49 @@ struct ChallengeField: NSViewRepresentable {
         view.drawsBackground = true
         view.backgroundColor = .textBackgroundColor
         view.textContainerInset = NSSize(width: 6, height: 6)
+        // The text view is the only thing here that accepts a drop; the scroll
+        // view registers for no drag types of its own, so it needs no call.
         view.unregisterDraggedTypes()
 
+        // A bare text view is vertically resizable, and SwiftUI hosts it in an
+        // unflipped view, so as the text grows the view extends upward out of
+        // its fixed-height host and over the challenge string being copied.
+        // Inside a scroll view the viewport stays the size SwiftUI gave it and
+        // the text scrolls instead.
+        view.minSize = .zero
+        view.maxSize = NSSize(
+            width: CGFloat.greatestFiniteMagnitude,
+            height: CGFloat.greatestFiniteMagnitude
+        )
+        view.isVerticallyResizable = true
+        view.isHorizontallyResizable = false
+        view.autoresizingMask = .width
+        view.textContainer?.widthTracksTextView = true
+
+        let scroll = NSScrollView()
+        scroll.documentView = view
+        scroll.drawsBackground = false
+        scroll.hasVerticalScroller = false
+        scroll.hasHorizontalScroller = false
+        scroll.autohidesScrollers = true
+
         // Lockout means there is nowhere else for keystrokes to go, so take
-        // the focus rather than making the user click first.
+        // the focus rather than making the user click first. The text view,
+        // not the scroll view, is what receives the keys.
         DispatchQueue.main.async {
             view.window?.makeFirstResponder(view)
         }
-        return view
+        return scroll
     }
 
-    func updateNSView(_ view: NoPasteTextView, context: Context) {
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        guard let view = scroll.documentView as? NSTextView else { return }
         // Only write back when the clamp actually changed something, so the
         // insertion point is not reset on every keystroke.
         if view.string != text {
             view.string = text
             view.setSelectedRange(NSRange(location: text.count, length: 0))
+            view.scrollRangeToVisible(view.selectedRange())
         }
     }
 
@@ -96,6 +123,9 @@ struct ChallengeField: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let view = notification.object as? NSTextView else { return }
             text.wrappedValue = view.string
+            // The viewport no longer grows with the text, so keep the tail
+            // being typed in view.
+            view.scrollRangeToVisible(view.selectedRange())
         }
 
         /// Newlines would let a multi-line paste masquerade as typing, and
