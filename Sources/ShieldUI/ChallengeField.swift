@@ -44,6 +44,30 @@ final class NoPasteTextView: NSTextView {
     }
 }
 
+/// Keeps the scroll offset on a line boundary. AppKit scrolls by exactly what
+/// the caret needs, which leaves a part-line at the top edge and looks like a
+/// rendering fault rather than scrolled text. The text view grows only after
+/// the delegate has fired (TextKit 2 lays out lazily), so a scroll requested
+/// there acts on a stale height; constraining the bounds catches every scroll,
+/// whenever it happens.
+final class LineSnappingClipView: NSClipView {
+    /// Measured on a standalone layout manager: asking the text view for its
+    /// own would drag it back from TextKit 2 to TextKit 1.
+    private static let lineHeight: CGFloat =
+        NSLayoutManager().defaultLineHeight(for: .monospacedSystemFont(ofSize: 13, weight: .regular))
+
+    override func constrainBoundsRect(_ proposed: NSRect) -> NSRect {
+        var rect = super.constrainBoundsRect(proposed)
+        guard let text = documentView as? NSTextView, rect.origin.y > 0 else { return rect }
+        // Rounding up shows a little past the end, where the bottom inset is
+        // blank, rather than cutting a line at the top.
+        let inset = text.textContainerInset.height
+        let lines = ((rect.origin.y - inset) / Self.lineHeight).rounded(.up)
+        rect.origin.y = max(0, inset + lines * Self.lineHeight)
+        return rect
+    }
+}
+
 struct ChallengeField: NSViewRepresentable {
     @Binding var text: String
 
@@ -86,6 +110,7 @@ struct ChallengeField: NSViewRepresentable {
         view.textContainer?.widthTracksTextView = true
 
         let scroll = NSScrollView()
+        scroll.contentView = LineSnappingClipView()
         scroll.documentView = view
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = false
