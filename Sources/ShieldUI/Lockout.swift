@@ -9,10 +9,44 @@ import AppKit
 public final class Lockout {
     private let nets: SafetyNets
     private(set) var isEngaged = false
+    private let yieldingTo: Set<String>
     private var watchdog: (any NSObjectProtocol)?
+    private var activations: (any NSObjectProtocol)?
+    private var lastActivated: String?
 
-    public init(nets: SafetyNets = .lenient) {
+    /// `yieldingTo` names apps (by bundle identifier) that outrank this
+    /// Lockout. While one of them is frontmost we leave activation alone:
+    /// two Lockouts that each take activation back from the other flicker
+    /// forever, and the windows share a level so neither wins visually.
+    public init(nets: SafetyNets = .lenient, yieldingTo: Set<String> = []) {
         self.nets = nets
+        self.yieldingTo = yieldingTo
+    }
+
+    /// Pure so it can be tested without AppKit.
+    static func shouldYield(frontmost: String?, lastActivated: String?, to set: Set<String>) -> Bool {
+        [frontmost, lastActivated].contains { $0.map(set.contains) ?? false }
+    }
+
+    /// `frontmostApplication` can still name the previous app while
+    /// `didResignActive` is being delivered, so it is not enough alone.
+    /// `lastActivated` is kept current by `didActivateApplication`, and either
+    /// one naming a higher-priority app is reason to stand down.
+    private var shouldYieldNow: Bool {
+        Lockout.shouldYield(
+            frontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+            lastActivated: lastActivated,
+            to: yieldingTo
+        )
+    }
+
+    private func takeActivation() {
+        NSApp.activate(ignoringOtherApps: true)
+        // Our windows may have been ordered in over a higher-priority
+        // shield's; bring them back on top so it re-covers them.
+        for window in NSApp.windows where window.isVisible {
+            window.orderFrontRegardless()
+        }
     }
 
     var options: NSApplication.PresentationOptions {
@@ -36,9 +70,25 @@ public final class Lockout {
         guard !isEngaged else { return }
         isEngaged = true
         MainThreadWatchdog.shared.setArmed(true)
-        NSApp.activate(ignoringOtherApps: true)
+        lastActivated = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        // Still present and set state when yielding; only the activation
+        // grab is skipped, so we do not steal focus from the higher shield.
+        if !shouldYieldNow {
+            takeActivation()
+        }
         NSApp.presentationOptions = options
         redrawCursor()
+
+        if !yieldingTo.isEmpty {
+            activations = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.didActivateApplicationNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] note in
+                let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                MainActor.assumeIsolated { self?.lastActivated = app?.bundleIdentifier }
+            }
+        }
 
         // Presentation options only apply while this app is active, so losing
         // activation silently ends Lockout however intact the options look.
@@ -51,8 +101,8 @@ public final class Lockout {
             queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, self.isEngaged else { return }
-                NSApp.activate(ignoringOtherApps: true)
+                guard let self, self.isEngaged, !self.shouldYieldNow else { return }
+                self.takeActivation()
                 NSApp.presentationOptions = self.options
                 self.redrawCursor()
             }
@@ -81,6 +131,10 @@ public final class Lockout {
             NotificationCenter.default.removeObserver(watchdog)
         }
         watchdog = nil
+        if let activations {
+            NSWorkspace.shared.notificationCenter.removeObserver(activations)
+        }
+        activations = nil
         NSApp.presentationOptions = []
     }
 }
