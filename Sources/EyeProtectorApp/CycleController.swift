@@ -23,7 +23,8 @@ final class CycleController {
 
     init(
         overlay: OverlayController,
-        lockout: Lockout = Lockout(),
+        // Curfew outranks this app: yield rather than fight it for activation.
+        lockout: Lockout = Lockout(yieldingTo: ["com.michalramus.curfew"]),
         store: SettingsStore = SettingsStore(),
         nets: SafetyNets = .lenient,
         now: Date = Date()
