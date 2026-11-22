@@ -161,3 +161,6 @@ Set it back afterwards.
       grep curfew` prints nothing, both plists are gone from
       `/Library/LaunchDaemons` and `/Library/LaunchAgents`, and the shield
       has gone
+- [ ] Both shields at once: with Eye Protector's overlay up, let Curfew's
+      shield come up. Pass: Curfew stays on top and focused, Eye Protector's
+      overlay is covered, and there is no flicker or focus ping-pong
